@@ -1,5 +1,5 @@
 """
-SecureRAG — Streamlit Application
+potbot — Streamlit Application
 
 Clean UI integrating with RAGPipeline and IngestionPipeline domain services.
 """
@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import streamlit as st
 import config
 st.set_page_config(
-    page_title="SecureRAG — Internal Document Intelligence",
+    page_title="potbot — Internal Document Intelligence",
     page_icon="🔒",
     layout="wide",
     initial_sidebar_state="expanded",
@@ -98,7 +98,7 @@ if "messages" not in st.session_state:
 
 # --- Sidebar ---
 with st.sidebar:
-    st.markdown("## 🔒 SecureRAG")
+    st.markdown("## 🔒 potbot")
     st.markdown("---")
 
     # Document Ingestion
@@ -189,14 +189,14 @@ with st.sidebar:
     st.markdown("---")
     st.markdown(
         "<div style='text-align: center; color: #888; font-size: 0.8rem;'>"
-        "SecureRAG v1.0 • Local Embeddings<br>Groq LLM Engine"
+        "potbot v1.0 • Local Embeddings<br>Groq LLM Engine"
         "</div>",
         unsafe_allow_html=True,
     )
 
 
 # --- Main Header ---
-st.markdown('<div class="main-header">🔒 SecureRAG</div>', unsafe_allow_html=True)
+st.markdown('<div class="main-header">🔒 potbot</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-header">'
     "Enterprise Internal Document RAG — 100% Private Embeddings + Groq Intelligence"

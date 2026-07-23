@@ -19,7 +19,7 @@ def task_run_pipeline(folder_path: str, recreate_index: bool = False) -> dict:
     return pipeline.run(folder_path=folder_path, recreate_index=recreate_index)
 
 
-@flow(name="securerag-ingest-flow", log_prints=True)
+@flow(name="potbot-ingest-flow", log_prints=True)
 def ingest_flow(folder_path: str, recreate_index: bool = False) -> dict:
     """Prefect workflow wrapping IngestionPipeline."""
     return task_run_pipeline(folder_path=folder_path, recreate_index=recreate_index)

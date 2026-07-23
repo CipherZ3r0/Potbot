@@ -1,6 +1,6 @@
-# SecureRAG Usage Guide
+# potbot Usage Guide
 
-Walkthrough of common workflows in SecureRAG.
+Walkthrough of common workflows in potbot.
 
 ## 1. Generating Sample Documents
 To generate a set of test corporate policy documents:
@@ -52,5 +52,5 @@ python evaluation/llm_eval.py data/ground_truth.json
 ## 5. Viewing Telemetry in Grafana
 1. Open Grafana (`http://localhost:3000`).
 2. Log in with `admin` / `admin`.
-3. Navigate to **Dashboards** → **SecureRAG Monitoring Dashboard**.
+3. Navigate to **Dashboards** → **potbot Monitoring Dashboard**.
 4. Monitor real-time latency, token usage, query logs, and user feedback sentiment.

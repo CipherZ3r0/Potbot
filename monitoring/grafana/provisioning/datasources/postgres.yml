@@ -1,14 +1,14 @@
 apiVersion: 1
 
 datasources:
-  - name: PostgreSQL-SecureRAG
+  - name: PostgreSQL-potbot
     type: postgres
     access: proxy
     url: postgres:5432
-    user: securerag
-    database: securerag
+    user: potbot
+    database: potbot
     secureJsonData:
-      password: securerag_secret
+      password: potbot_secret
     jsonData:
       sslmode: disable
       maxOpenConns: 5
