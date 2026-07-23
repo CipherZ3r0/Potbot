@@ -1,0 +1,28 @@
+# Environment
+.env
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & Volumes
+data/user_documents/
+elasticsearch_data/
+postgres_data/
+grafana_data/
+
+# OS
+.DS_Store
+Thumbs.db
+.directory
+
+# Virtual env
+venv/
+.venv/
+env/

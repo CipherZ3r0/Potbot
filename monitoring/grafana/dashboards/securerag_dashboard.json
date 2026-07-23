@@ -1,0 +1,135 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Total Queries Processed",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT count(*) as total FROM conversations;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "Average Latency (ms)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(AVG(response_time_ms), 0) as avg_latency FROM conversations;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "title": "Positive Feedback Rate (%)",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT CASE WHEN count(*) = 0 THEN 0 ELSE (SUM(CASE WHEN sentiment = 'positive' THEN 1 ELSE 0 END)::float / count(*)) * 100 END as positive_pct FROM feedback;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "title": "Total Tokens Consumed",
+      "type": "stat",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT COALESCE(SUM(total_tokens), 0) as tokens FROM conversations;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "Query Latency Over Time (ms)",
+      "type": "timeseries",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawSql": "SELECT created_at AS time, response_time_ms AS latency FROM conversations ORDER BY created_at ASC;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "User Feedback Breakdown",
+      "type": "piechart",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT sentiment, count(*) as count FROM feedback GROUP BY sentiment;",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 12 },
+      "id": 7,
+      "title": "Recent Queries & Telemetry Log",
+      "type": "table",
+      "targets": [
+        {
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "editorMode": "code",
+          "format": "table",
+          "rawSql": "SELECT id, question, model, retrieval_method, response_time_ms, total_tokens, created_at FROM conversations ORDER BY created_at DESC LIMIT 20;",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "refresh": "5s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["securerag", "rag", "monitoring"],
+  "time": { "from": "now-6h", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "SecureRAG Monitoring Dashboard",
+  "uid": "securerag-main-dashboard",
+  "version": 1
+}

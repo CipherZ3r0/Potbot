@@ -1,0 +1,35 @@
+# Core
+python-dotenv==1.1.0
+requests==2.32.3
+
+# Document Processing
+PyMuPDF==1.25.5
+python-docx==1.1.2
+chardet==5.2.0
+
+# Elasticsearch
+elasticsearch==8.18.0
+
+# Embeddings & Re-ranking (local)
+sentence-transformers==4.1.0
+
+# LLM via Groq
+groq==0.25.0
+
+# Web UI
+streamlit==1.45.1
+
+# Database
+psycopg2-binary==2.9.10
+sqlalchemy==2.0.41
+
+# Ingestion Pipeline
+prefect==3.4.5
+
+# Evaluation
+pandas==2.2.3
+numpy==2.2.6
+scikit-learn==1.6.1
+
+# Testing
+pytest==8.4.0

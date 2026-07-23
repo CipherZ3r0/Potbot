@@ -1,0 +1,14 @@
+Acme Corp IT Security Guidelines & Password Management
+
+Password Policy:
+- Minimum length: 16 characters.
+- Must contain uppercase, lowercase, numbers, and special symbols.
+- Passwords must be updated every 90 days.
+- Re-use of any of the last 10 passwords is strictly prohibited.
+
+Multi-Factor Authentication (MFA):
+- MFA is mandatory for all internal tools, VPNs, and email access.
+- Only hardware tokens (YubiKey) or authenticator apps (1Password/Okta) are permitted. SMS MFA is disallowed due to SIM-swapping risks.
+
+Remote Access & VPN:
+- All company laptops must run the WireGuard corporate VPN when connected to public Wi-Fi networks.

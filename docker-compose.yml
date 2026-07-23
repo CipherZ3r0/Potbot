@@ -1,0 +1,86 @@
+services:
+  # --- Knowledge Base / Vector Database ---
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.0
+    container_name: securerag-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -s http://localhost:9200/_cat/health | grep -q green || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- Feedback & Telemetry Database ---
+  postgres:
+    image: postgres:16-alpine
+    container_name: securerag-postgres
+    environment:
+      POSTGRES_DB: securerag
+      POSTGRES_USER: securerag
+      POSTGRES_PASSWORD: securerag_secret
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U securerag -d securerag"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # --- Monitoring Dashboard ---
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: securerag-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- SecureRAG Application ---
+  streamlit-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: securerag-app
+    ports:
+      - "8501:8501"
+    environment:
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-llama-3.3-70b-versatile}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=securerag_documents
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=securerag
+      - POSTGRES_USER=securerag
+      - POSTGRES_PASSWORD=securerag_secret
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+volumes:
+  es_data:
+  pg_data:
+  grafana_data:
