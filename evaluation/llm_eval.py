@@ -15,9 +15,10 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 
 import config
-from rag.retriever import search
-from rag.reranker import rerank
-from rag.llm_client import ask
+from rag.retrievers import SearchStrategyFactory
+from rag.rerankers import CrossEncoderReranker
+from rag.prompt_builders import TemplatePromptBuilder
+from rag.llm_providers import GroqLLMProvider
 from groq import Groq
 
 logger = logging.getLogger(__name__)
@@ -136,9 +137,11 @@ def evaluate_llm(
 
         # Retrieve context once
         try:
-            context_results = search(question, method=retrieval_method, top_k=config.TOP_K_RETRIEVAL)
+            strategy = SearchStrategyFactory.get_strategy(retrieval_method)
+            context_results = strategy.search(question, top_k=config.TOP_K_RETRIEVAL)
             if use_reranking:
-                context_results = rerank(question, context_results, top_n=config.RERANK_TOP_N)
+                reranker = CrossEncoderReranker()
+                context_results = reranker.rerank(question, context_results, top_n=config.RERANK_TOP_N)
         except Exception as e:
             logger.warning(f"Retrieval failed for query {i}: {e}")
             continue
@@ -146,11 +149,12 @@ def evaluate_llm(
         for style in prompt_styles:
             try:
                 # Generate answer
-                result = ask(
-                    question=question,
-                    context_results=context_results,
-                    prompt_style=style,
-                )
+                prompt_builder = TemplatePromptBuilder()
+                prompt = prompt_builder.build_prompt(question, context_results, style=style)
+                
+                llm = GroqLLMProvider()
+                result = llm.generate(prompt)
+                
                 actual_answer = result["answer"]
 
                 # Cosine similarity between expected and actual
@@ -170,7 +174,7 @@ def evaluate_llm(
                     "question": question,
                     "cosine_similarity": cos_sim,
                     "response_time_ms": result["response_time_ms"],
-                    "total_tokens": result["tokens_used"]["total"],
+                    "total_tokens": result["total_tokens"],
                     **judge_scores,
                 })
 
