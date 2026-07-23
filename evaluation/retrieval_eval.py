@@ -13,8 +13,8 @@ from pathlib import Path
 import pandas as pd
 
 import config
-from rag.retriever import search
-from rag.reranker import rerank
+from rag.retrievers import SearchStrategyFactory
+from rag.rerankers import CrossEncoderReranker
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,8 @@ def evaluate_retrieval(
 
         for method in methods:
             try:
-                results = search(question, method=method, top_k=top_k)
+                strategy = SearchStrategyFactory.get_strategy(method)
+                results = strategy.search(question, top_k=top_k)
                 hr = hit_rate_at_k(results, expected_id, k=top_k)
                 mrr = mrr_at_k(results, expected_id, k=top_k)
                 all_results[method]["hit_rates"].append(hr)
@@ -93,8 +94,10 @@ def evaluate_retrieval(
 
         # Hybrid + re-ranking
         try:
-            hybrid_results = search(question, method="hybrid", top_k=top_k * 2)
-            reranked = rerank(question, hybrid_results, top_n=top_k)
+            hybrid_strategy = SearchStrategyFactory.get_strategy("hybrid")
+            hybrid_results = hybrid_strategy.search(question, top_k=top_k * 2)
+            reranker = CrossEncoderReranker()
+            reranked = reranker.rerank(question, hybrid_results, top_n=top_k)
             hr = hit_rate_at_k(reranked, expected_id, k=top_k)
             mrr = mrr_at_k(reranked, expected_id, k=top_k)
             all_results["hybrid_rerank"]["hit_rates"].append(hr)
