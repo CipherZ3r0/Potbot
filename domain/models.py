@@ -1,5 +1,5 @@
 """
-Domain Models — Dataclasses representing core domain entities in SecureRAG.
+Domain Models — Dataclasses representing core domain entities in potbot.
 """
 
 from dataclasses import dataclass, field

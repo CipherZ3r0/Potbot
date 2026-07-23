@@ -1,5 +1,5 @@
 """
-Unit Tests for SecureRAG domain models, loaders, chunkers, prompt builders, and rerankers.
+Unit Tests for potbot domain models, loaders, chunkers, prompt builders, and rerankers.
 """
 
 import unittest
@@ -12,7 +12,7 @@ from rag.rerankers import NoOpReranker
 from rag.query_rewriters import NoOpQueryRewriter
 
 
-class TestSecureRAGPipeline(unittest.TestCase):
+class TestpotbotPipeline(unittest.TestCase):
 
     def test_domain_models(self):
         doc = Document(

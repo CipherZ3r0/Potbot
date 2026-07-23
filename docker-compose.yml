@@ -2,7 +2,7 @@ services:
   # --- Knowledge Base / Vector Database ---
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.18.0
-    container_name: securerag-elasticsearch
+    container_name: potbot-elasticsearch
     environment:
       - discovery.type=single-node
       - xpack.security.enabled=false
@@ -20,17 +20,17 @@ services:
   # --- Feedback & Telemetry Database ---
   postgres:
     image: postgres:16-alpine
-    container_name: securerag-postgres
+    container_name: potbot-postgres
     environment:
-      POSTGRES_DB: securerag
-      POSTGRES_USER: securerag
-      POSTGRES_PASSWORD: securerag_secret
+      POSTGRES_DB: potbot
+      POSTGRES_USER: potbot
+      POSTGRES_PASSWORD: potbot_secret
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U securerag -d securerag"]
+      test: ["CMD-SHELL", "pg_isready -U potbot -d potbot"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -38,7 +38,7 @@ services:
   # --- Monitoring Dashboard ---
   grafana:
     image: grafana/grafana:10.4.0
-    container_name: securerag-grafana
+    container_name: potbot-grafana
     ports:
       - "3000:3000"
     environment:
@@ -53,12 +53,12 @@ services:
       postgres:
         condition: service_healthy
 
-  # --- SecureRAG Application ---
+  # --- potbot Application ---
   streamlit-app:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: securerag-app
+    container_name: potbot-app
     ports:
       - "8501:8501"
     environment:
@@ -66,12 +66,12 @@ services:
       - LLM_MODEL=${LLM_MODEL:-llama-3.3-70b-versatile}
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
-      - ELASTICSEARCH_INDEX=securerag_documents
+      - ELASTICSEARCH_INDEX=potbot_documents
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
-      - POSTGRES_DB=securerag
-      - POSTGRES_USER=securerag
-      - POSTGRES_PASSWORD=securerag_secret
+      - POSTGRES_DB=potbot
+      - POSTGRES_USER=potbot
+      - POSTGRES_PASSWORD=potbot_secret
     volumes:
       - ./data:/app/data
     depends_on:

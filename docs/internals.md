@@ -1,6 +1,6 @@
-# SecureRAG — Deep Dive & Internals
+# potbot — Deep Dive & Internals
 
-This document explains the "why" and "how" behind SecureRAG's core logic, algorithms, and observed behaviors.
+This document explains the "why" and "how" behind potbot's core logic, algorithms, and observed behaviors.
 
 ---
 
@@ -22,12 +22,12 @@ The system adapts how it chunks based on the file type:
 
 ## 2. The Search Stack: Hybrid + Re-ranking
 
-SecureRAG uses a multi-stage retrieval pipeline to achieve maximum accuracy.
+potbot uses a multi-stage retrieval pipeline to achieve maximum accuracy.
 
 ### Stage 1: Hybrid Retrieval (Elasticsearch)
 Vector search is great at understanding *meaning*, but terrible at exact keyword matching (e.g., searching for a specific product ID like `AX-992B`). Text search is the exact opposite.
 
-SecureRAG does both simultaneously:
+potbot does both simultaneously:
 1. **Vector Search (kNN)**: Embeds the user's query into a 384-dimensional vector and asks Elasticsearch for the closest chunks using cosine similarity.
 2. **Text Search (BM25)**: Asks Elasticsearch for chunks containing exact keywords from the query.
 
@@ -52,7 +52,7 @@ Users often ask lazy follow-up questions like:
 > "What is the policy?" 
 
 If you search for that exact string, the vector database will return random policies.
-SecureRAG intercepts the question and sends it to the LLM with a hidden `SYSTEM_PROMPT` (inside `LLMQueryRewriter`). The LLM rewrites the query to make it search-friendly (e.g., expanding abbreviations, adding context) *before* the database search happens.
+potbot intercepts the question and sends it to the LLM with a hidden `SYSTEM_PROMPT` (inside `LLMQueryRewriter`). The LLM rewrites the query to make it search-friendly (e.g., expanding abbreviations, adding context) *before* the database search happens.
 
 ---
 

@@ -17,7 +17,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT count(*) as total FROM conversations;",
@@ -33,7 +33,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT COALESCE(AVG(response_time_ms), 0) as avg_latency FROM conversations;",
@@ -49,7 +49,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT CASE WHEN count(*) = 0 THEN 0 ELSE (SUM(CASE WHEN sentiment = 'positive' THEN 1 ELSE 0 END)::float / count(*)) * 100 END as positive_pct FROM feedback;",
@@ -65,7 +65,7 @@
       "type": "stat",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT COALESCE(SUM(total_tokens), 0) as tokens FROM conversations;",
@@ -81,7 +81,7 @@
       "type": "timeseries",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "time_series",
           "rawSql": "SELECT created_at AS time, response_time_ms AS latency FROM conversations ORDER BY created_at ASC;",
@@ -97,7 +97,7 @@
       "type": "piechart",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT sentiment, count(*) as count FROM feedback GROUP BY sentiment;",
@@ -113,7 +113,7 @@
       "type": "table",
       "targets": [
         {
-          "datasource": { "type": "postgres", "uid": "PostgreSQL-SecureRAG" },
+          "datasource": { "type": "postgres", "uid": "PostgreSQL-potbot" },
           "editorMode": "code",
           "format": "table",
           "rawSql": "SELECT id, question, model, retrieval_method, response_time_ms, total_tokens, created_at FROM conversations ORDER BY created_at DESC LIMIT 20;",
@@ -125,11 +125,11 @@
   "refresh": "5s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": ["securerag", "rag", "monitoring"],
+  "tags": ["potbot", "rag", "monitoring"],
   "time": { "from": "now-6h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "SecureRAG Monitoring Dashboard",
-  "uid": "securerag-main-dashboard",
+  "title": "potbot Monitoring Dashboard",
+  "uid": "potbot-main-dashboard",
   "version": 1
 }

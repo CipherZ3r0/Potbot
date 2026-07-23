@@ -1,12 +1,12 @@
-# SecureRAG — Architecture & Design
+# potbot — Architecture & Design
 
 A comprehensive guide to the system architecture, tech stack, design patterns, and how every component fits together.
 
 ---
 
-## 1. What is SecureRAG?
+## 1. What is potbot?
 
-SecureRAG is a **Retrieval-Augmented Generation (RAG)** application for querying internal company documents using natural language. It:
+potbot is a **Retrieval-Augmented Generation (RAG)** application for querying internal company documents using natural language. It:
 
 1. **Ingests** documents (PDF, DOCX, TXT, MD, CSV) → splits them into chunks → generates vector embeddings → stores them in Elasticsearch.
 2. **Retrieves** the most relevant chunks when a user asks a question (using vector search, text search, or a hybrid of both).
@@ -92,17 +92,26 @@ llm-zoomcamp-project/
 │
 ├── ingestion/                    # Document ingestion pipeline
 │   ├── loaders.py                # File format loaders (PDF, DOCX, TXT, CSV)
+│   ├── document_loader.py        # (deprecated) old functional version
 │   ├── chunkers.py               # Text splitting strategies
+│   ├── chunker.py                # (deprecated) old functional version
 │   ├── embedders.py              # Embedding generation (SentenceTransformer)
+│   ├── embedder.py               # (deprecated) old functional version
 │   ├── indexers.py               # Elasticsearch indexing & search
+│   ├── indexer.py                # (deprecated) old functional version
 │   └── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index
 │
 ├── rag/                          # RAG query pipeline
 │   ├── query_rewriters.py        # LLM-based query expansion
+│   ├── query_rewriter.py         # (deprecated) old functional version
 │   ├── retrievers.py             # Search strategies (vector, text, hybrid + RRF)
+│   ├── retriever.py              # (deprecated) old functional version
 │   ├── rerankers.py              # Cross-encoder re-ranking
+│   ├── reranker.py               # (deprecated) old functional version
 │   ├── prompt_builders.py        # Prompt template construction
+│   ├── prompt_builder.py         # (deprecated) old functional version
 │   ├── llm_providers.py          # Groq LLM API client
+│   ├── llm_client.py             # (deprecated) old functional version
 │   └── pipeline.py               # Orchestrator: Rewrite → Retrieve → Rerank → Generate
 │
 ├── evaluation/                   # Offline evaluation scripts
@@ -382,7 +391,7 @@ PostgreSQL contains two tables, auto-created by SQLAlchemy on first startup:
 
 ## 8. Elasticsearch Index Schema
 
-Index name: `securerag_documents` (configurable via `ELASTICSEARCH_INDEX`)
+Index name: `potbot_documents` (configurable via `ELASTICSEARCH_INDEX`)
 
 | Field          | ES Type        | Purpose                                        |
 |----------------|----------------|-------------------------------------------------|

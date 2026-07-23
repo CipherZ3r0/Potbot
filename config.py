@@ -1,5 +1,5 @@
 """
-SecureRAG - Centralized configuration.
+potbot - Centralized configuration.
 
 Loads settings from environment variables (.env file) with sensible defaults.
 """
@@ -19,14 +19,14 @@ EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
 
 # --- Elasticsearch ---
 ELASTICSEARCH_HOST = os.getenv("ELASTICSEARCH_HOST", "http://localhost:9200")
-ELASTICSEARCH_INDEX = os.getenv("ELASTICSEARCH_INDEX", "securerag_documents")
+ELASTICSEARCH_INDEX = os.getenv("ELASTICSEARCH_INDEX", "potbot_documents")
 
 # --- PostgreSQL ---
 POSTGRES_HOST = os.getenv("POSTGRES_HOST", "localhost")
 POSTGRES_PORT = int(os.getenv("POSTGRES_PORT", "5432"))
-POSTGRES_DB = os.getenv("POSTGRES_DB", "securerag")
-POSTGRES_USER = os.getenv("POSTGRES_USER", "securerag")
-POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "securerag_secret")
+POSTGRES_DB = os.getenv("POSTGRES_DB", "potbot")
+POSTGRES_USER = os.getenv("POSTGRES_USER", "potbot")
+POSTGRES_PASSWORD = os.getenv("POSTGRES_PASSWORD", "potbot_secret")
 
 DATABASE_URL = (
     f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}"

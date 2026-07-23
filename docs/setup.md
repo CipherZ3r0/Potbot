@@ -1,6 +1,6 @@
-# SecureRAG Setup Guide
+# potbot Setup Guide
 
-Detailed instructions for installing, configuring, and running SecureRAG — both locally (without Docker) and with Docker Compose.
+Detailed instructions for installing, configuring, and running potbot — both locally (without Docker) and with Docker Compose.
 
 ## 🛠️ System Requirements
 
@@ -190,17 +190,17 @@ PostgreSQL stores conversation history, feedback, and telemetry data. The app wi
    psql -U postgres
 
    # Then run:
-   CREATE USER securerag WITH PASSWORD 'securerag_secret';
-   CREATE DATABASE securerag OWNER securerag;
-   GRANT ALL PRIVILEGES ON DATABASE securerag TO securerag;
+   CREATE USER potbot WITH PASSWORD 'potbot_secret';
+   CREATE DATABASE potbot OWNER potbot;
+   GRANT ALL PRIVILEGES ON DATABASE potbot TO potbot;
    \q
    ```
 
 4. **Verify the connection**:
 
    ```bash
-   psql -h localhost -U securerag -d securerag
-   # Enter password: securerag_secret
+   psql -h localhost -U potbot -d potbot
+   # Enter password: potbot_secret
    # You should get the psql prompt. Type \q to exit.
    ```
 
@@ -209,9 +209,9 @@ PostgreSQL stores conversation history, feedback, and telemetry data. The app wi
 ```bash
 docker run -d --name pg-local \
   -p 5432:5432 \
-  -e POSTGRES_DB=securerag \
-  -e POSTGRES_USER=securerag \
-  -e POSTGRES_PASSWORD=securerag_secret \
+  -e POSTGRES_DB=potbot \
+  -e POSTGRES_USER=potbot \
+  -e POSTGRES_PASSWORD=potbot_secret \
   postgres:16-alpine
 ```
 
@@ -220,17 +220,17 @@ Windows PowerShell:
 ```powershell
 docker run -d --name pg-local `
   -p 5432:5432 `
-  -e POSTGRES_DB=securerag `
-  -e POSTGRES_USER=securerag `
-  -e POSTGRES_PASSWORD=securerag_secret `
+  -e POSTGRES_DB=potbot `
+  -e POSTGRES_USER=potbot `
+  -e POSTGRES_PASSWORD=potbot_secret `
   postgres:16-alpine
 ```
 
 Verify:
 
 ```bash
-psql -h localhost -U securerag -d securerag
-# password: securerag_secret
+psql -h localhost -U potbot -d potbot
+# password: potbot_secret
 ```
 
 #### Troubleshooting PostgreSQL
@@ -240,7 +240,7 @@ psql -h localhost -U securerag -d securerag
 | `could not translate host name "postgres"` | Your `.env` has `POSTGRES_HOST=postgres`. Change it to `localhost`. |
 | `connection refused on port 5432` | PostgreSQL is not running. Start it with the commands above. |
 | `password authentication failed` | The user/password in `.env` doesn't match what's in PostgreSQL. Re-run the `CREATE USER` command. |
-| `database "securerag" does not exist` | Run `CREATE DATABASE securerag OWNER securerag;` in psql. |
+| `database "potbot" does not exist` | Run `CREATE DATABASE potbot OWNER potbot;` in psql. |
 
 ---
 
@@ -303,7 +303,7 @@ This starts four services:
 | `elasticsearch`  | 9200  | Vector + text search engine    |
 | `postgres`       | 5432  | Feedback & telemetry database  |
 | `grafana`        | 3000  | Monitoring dashboards          |
-| `streamlit-app`  | 8501  | The SecureRAG application      |
+| `streamlit-app`  | 8501  | The potbot application      |
 
 ### Step 3 — Verify services are healthy
 
@@ -327,7 +327,7 @@ docker-compose logs -f streamlit-app
 
 | Service     | URL                     | Credentials            |
 |-------------|-------------------------|------------------------|
-| SecureRAG   | http://localhost:8501    | —                      |
+| potbot   | http://localhost:8501    | —                      |
 | Grafana     | http://localhost:3000    | `admin` / `admin`      |
 | Elasticsearch | http://localhost:9200 | —                      |
 
@@ -354,7 +354,7 @@ docker-compose down -v
 
 ## 🤗 About Hugging Face & the Embedding Model
 
-SecureRAG uses the `sentence-transformers/all-MiniLM-L6-v2` model for generating document embeddings.
+potbot uses the `sentence-transformers/all-MiniLM-L6-v2` model for generating document embeddings.
 
 ### How it works
 
