@@ -17,13 +17,12 @@
 - [Monitoring & Observability](#-monitoring--observability)
 - [Quickstart & Reproducibility](#-quickstart--reproducibility)
 - [Project Structure](#-project-structure)
-- [Evaluation Criteria Mapping](#-evaluation-criteria-mapping)
 
 ---
 
 ## 🎯 Problem Description
 
-Modern enterprises manage thousands of unstructured internal documents — standard operating procedures (SOPs), company policies, engineering handbooks, and financial reports. Navigating these files manually is slow, error-prone, and inefficient.
+Modern enterprises manage thousands of unstructured internal documents standard operating procedures (SOPs), company policies, engineering handbooks, and financial reports. Navigating these files manually is slow, error-prone, and inefficient.
 
 **Potbot** solves this problem by providing:
 1. **Automated Document Ingestion**: Select any folder containing PDFs, Word files, Markdown notes, or CSVs; the system automatically extracts text, chunks content, generates embeddings, and indexes everything into a hybrid search database.
