@@ -1,0 +1,43 @@
+# Auto-detect text files
+* text=auto
+
+# Source code
+*.py      text eol=lf
+*.sh      text eol=lf
+
+# Documentation
+*.md      text eol=lf
+*.txt     text eol=lf
+
+# Configuration
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.toml    text eol=lf
+*.ini     text eol=lf
+*.cfg     text eol=lf
+*.env     text eol=lf
+*.example text eol=lf
+
+# Data
+*.csv     text eol=lf
+
+# Docker
+Dockerfile        text eol=lf
+docker-compose.yml text eol=lf
+
+# Windows scripts
+*.bat     text eol=crlf
+*.cmd     text eol=crlf
+
+# Binary files
+*.png     binary
+*.jpg     binary
+*.jpeg    binary
+*.gif     binary
+*.ico     binary
+*.pdf     binary
+*.zip     binary
+*.gz      binary
+*.tar     binary
+*.7z      binary
