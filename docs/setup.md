@@ -29,6 +29,24 @@ Open `.env` and set your values. The most important variable is your **Groq API 
 GROQ_API_KEY=gsk_your_groq_api_key_here
 ```
 
+### Ingestion Tuning (Optional)
+You can tune the ingestion pipeline's performance and memory usage by adding these optional variables to your `.env`:
+
+```env
+# Concurrency tuning
+INGESTION_LOADER_WORKERS=4           # Number of threads for reading files
+INGESTION_CHUNKER_WORKERS=2          # Number of CPU processes for parsing text
+
+# Batched execution
+INGESTION_EMBED_BATCH_SIZE=32        # Number of chunks to embed at once
+INGESTION_BULK_INDEX_SIZE=500        # Number of chunks to send to Elasticsearch at once
+
+# Hardware & Caching
+INGESTION_DEVICE=auto                # auto, cuda, mps, cpu
+INGESTION_INCREMENTAL=true           # Skip unchanged files using sqlite hashes
+INGESTION_EMBED_CACHE_ENABLED=true   # Cache vector embeddings in sqlite
+```
+
 ### Local vs Docker host values
 
 | Variable             | Local Development      | Docker Deployment           |
@@ -304,6 +322,8 @@ This starts four services:
 | `postgres`       | 5432  | Feedback & telemetry database  |
 | `grafana`        | 3000  | Monitoring dashboards          |
 | `streamlit-app`  | 8501  | The potbot application      |
+
+> **Note**: The ingestion pipeline uses two local SQLite files (`.embed_cache.db` and `.ingest_state.db`) for caching and incremental runs. These are stored locally in the project root and are mounted or written directly by the application. They are safely ignored by git.
 
 ### Step 3 — Verify services are healthy
 

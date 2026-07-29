@@ -20,6 +20,7 @@ This generates documents in `data/sample_documents/`:
 2. In the sidebar under **Document Ingestion**, enter the absolute path to your document folder (e.g., `data/sample_documents` or `/app/data/sample_documents`).
 3. Click **🚀 Ingest Documents**.
 4. The system will scan, chunk, embed, and index all documents into Elasticsearch.
+5. **Incremental Runs**: If you re-ingest the exact same folder later, the system will instantly skip unchanged files using a SQLite state checkpoint. Identical text snippets across files will bypass heavy ML inference using the LRU embedding cache, dramatically accelerating the ingestion process.
 
 ---
 
