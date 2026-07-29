@@ -68,6 +68,8 @@ class BaseVectorStore(ABC):
         chunks: Iterable[Chunk],
         bulk_size: int = 200,
         metrics: Optional[PipelineMetrics] = None,
+        state_store=None,  # Optional[BaseCheckpointStore]
+        run_id: Optional[str] = None,
     ) -> int:
         """Index chunks in *bulk_size* batches and return total count indexed.
 
@@ -96,12 +98,12 @@ class BaseVectorStore(ABC):
             for chunk in chunks:
                 batch.append(chunk)
                 if len(batch) >= bulk_size:
-                    count = self._index_batch(batch, metrics)
+                    count = self._index_batch(batch, metrics, state_store, run_id)
                     total_indexed += count
                     batch.clear()
 
             if batch:
-                count = self._index_batch(batch, metrics)
+                count = self._index_batch(batch, metrics, state_store, run_id)
                 total_indexed += count
 
         if metrics:
@@ -118,12 +120,22 @@ class BaseVectorStore(ABC):
         self,
         batch: List[Chunk],
         metrics: Optional[PipelineMetrics],
+        state_store=None,
+        run_id: Optional[str] = None,
     ) -> int:
         """Index one batch and update metrics. Delegates to :meth:`index_chunks`."""
         try:
             count = self.index_chunks(batch)
             if metrics:
                 metrics.docs_indexed += count
+            
+            # If a state store is provided and there were no errors, checkpoint all chunks.
+            # (A more robust implementation would parse partial errors, but this covers
+            # the common success case).
+            if state_store is not None and run_id is not None and count == len(batch):
+                for c in batch:
+                    state_store.checkpoint_chunk(run_id, c.chunk_id, "indexed")
+                    
             return count
         except Exception as exc:
             logger.error("stream_index: batch indexing failed: %s", exc)

@@ -304,6 +304,9 @@ class CompositeDocumentLoader:
                                 metrics.docs_loaded += len(docs)
                             else:
                                 metrics.load_errors += 1
+                        # Mark file as successfully ingested so next run can skip it
+                        if docs and state_store is not None:
+                            state_store.mark_file_done(path)
                         yield from docs
                     except Exception as exc:
                         logger.error("loader: unhandled error for '%s': %s", path, exc)

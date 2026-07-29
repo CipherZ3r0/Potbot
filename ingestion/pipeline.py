@@ -120,6 +120,11 @@ class IngestionPipeline:
         metrics = PipelineMetrics()
         metrics.start_wall_timer()
 
+        # Begin a checkpoint run so progress can be tracked / resumed
+        run_id: Optional[str] = None
+        if self.state_store is not None:
+            run_id = self.state_store.begin_run()
+
         # Resolve state store: only use it if incremental mode is requested
         active_state_store = self.state_store if incremental else None
 
@@ -148,6 +153,8 @@ class IngestionPipeline:
             embed_stream,
             bulk_size=self.config.index_bulk_size,
             metrics=metrics,
+            state_store=active_state_store,
+            run_id=run_id,
         )
 
         # ----------------------------------------------------------------
@@ -205,3 +212,88 @@ class IngestionPipeline:
                 recreate_index=recreate_index,
                 incremental=False,  # temp paths change per call; skip hash check
             )
+
+    def resume_run(
+        self,
+        run_id: str,
+        folder_path: str,
+    ) -> Dict[str, Any]:
+        """Resume a previously interrupted ingestion run.
+
+        Re-runs the loader and chunker, but skips embedding and indexing for
+        chunks that were already successfully indexed in the prior run.
+
+        Parameters
+        ----------
+        run_id:
+            The UUID of the interrupted run (found in the logs of the prior run).
+        folder_path:
+            The directory to ingest (must be the same as the prior run).
+        """
+        if self.state_store is None:
+            raise ValueError("resume_run requires a configured state_store")
+
+        logger.info("IngestionPipeline.resume_run: run_id=%s folder=%s", run_id, folder_path)
+        metrics = PipelineMetrics()
+        metrics.start_wall_timer()
+
+        # Incremental loader skip is disabled for resumes because the file
+        # hash would have been updated during the first run even if chunks failed.
+        # We must re-chunk everything and filter at the chunk level.
+        doc_stream = self.loader.stream_directory(
+            folder_path,
+            metrics=metrics,
+            state_store=None,  # explicitly None
+        )
+
+        chunk_stream = self.chunker.stream_chunks(doc_stream, metrics=metrics)
+
+        # Filter out chunks that were already indexed in this run_id
+        def _filter_pending(chunks, batch_size=200):
+            batch = []
+            for c in chunks:
+                batch.append(c)
+                if len(batch) >= batch_size:
+                    pending_ids = self.state_store.get_pending_chunks(run_id, [x.chunk_id for x in batch])
+                    pending_set = set(pending_ids)
+                    yield from (x for x in batch if x.chunk_id in pending_set)
+                    batch.clear()
+            if batch:
+                pending_ids = self.state_store.get_pending_chunks(run_id, [x.chunk_id for x in batch])
+                pending_set = set(pending_ids)
+                yield from (x for x in batch if x.chunk_id in pending_set)
+
+        filtered_chunk_stream = _filter_pending(chunk_stream)
+
+        embed_stream = self.embedder.stream_embed(
+            filtered_chunk_stream,
+            batch_size=self.config.embed_batch_size,
+            metrics=metrics,
+        )
+
+        dim = self.embedder.get_dimension()
+        self.vector_store.create_index(dimension=dim, recreate=False)
+
+        indexed_count = self.vector_store.stream_index(
+            embed_stream,
+            bulk_size=self.config.index_bulk_size,
+            metrics=metrics,
+            state_store=self.state_store,
+            run_id=run_id,
+        )
+
+        metrics.stop_wall_timer()
+        metrics.emit_summary()
+
+        es_stats = self.vector_store.get_stats()
+        summary = {
+            "status": "success",
+            "doc_count": metrics.docs_loaded,
+            "chunk_count": metrics.chunks_produced,
+            "indexed_count": indexed_count,
+            "total_in_index": es_stats.get("doc_count", 0),
+            **metrics.as_dict(),
+        }
+
+        logger.info("IngestionPipeline complete (resume): %s", summary)
+        return summary
