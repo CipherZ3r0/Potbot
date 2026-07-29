@@ -73,10 +73,20 @@ class IngestionPipeline:
             chunk_overlap=self.config.chunk_overlap,
             config=self.config,
         )
-        self.embedder = embedder or SentenceTransformerEmbedder(
-            device=self.config.device,
-            pipeline_config=self.config,
-        )
+        if embedder is not None:
+            self.embedder = embedder
+        else:
+            cache = None
+            if self.config.embed_cache_enabled:
+                from ingestion.embed_cache import SQLiteEmbeddingCache
+                cache = SQLiteEmbeddingCache(
+                    max_entries=self.config.embed_cache_max_entries
+                )
+            self.embedder = SentenceTransformerEmbedder(
+                device=self.config.device,
+                pipeline_config=self.config,
+                cache=cache,
+            )
         self.vector_store = vector_store or ElasticsearchVectorStore()
         self.state_store = state_store
 
