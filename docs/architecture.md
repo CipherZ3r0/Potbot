@@ -20,10 +20,10 @@ potbot is a **Retrieval-Augmented Generation (RAG)** application for querying in
 | Layer              | Technology                           | Why this choice                                                                 |
 |--------------------|--------------------------------------|---------------------------------------------------------------------------------|
 | **Web UI**         | Streamlit                            | Rapid prototyping, built-in widgets, hot-reload, chat input support             |
-| **LLM**           | Groq API (Llama 3.3 70B)            | Ultra-fast inference on open-weight models, free tier available                  |
+| **LLM**           | Groq API                             | Ultra-fast inference on open-weight models, free tier available                  |
 | **Embeddings**     | sentence-transformers (`all-MiniLM-L6-v2`) | 100% local, no API key, 384-dim vectors, fast on CPU               |
 | **Re-ranking**     | CrossEncoder (`ms-marco-MiniLM-L-6-v2`) | Local cross-encoder for high-accuracy relevance scoring             |
-| **Vector Store**   | Elasticsearch 8.x                    | Supports both dense vector kNN and sparse BM25 in one engine — enables hybrid search |
+| **Vector Store**   | Elasticsearch 8.x                    | Supports both dense vector kNN and sparse BM25 in one engine and enables hybrid search |
 | **Database**       | PostgreSQL 16                        | Reliable RDBMS for conversation logs, feedback, telemetry                       |
 | **ORM**           | SQLAlchemy 2.0                       | Clean Repository pattern, session management, dialect-agnostic                  |
 | **Monitoring**     | Grafana                              | Visual dashboards reading from PostgreSQL for latency, tokens, feedback trends  |
