@@ -5,7 +5,10 @@ Query Rewriter Services — Abstract interface & LLM implementation.
 from abc import ABC, abstractmethod
 import logging
 
-from groq import Groq
+try:
+    from groq import Groq
+except (ImportError, AttributeError, OSError, Exception):
+    Groq = None
 
 import config
 

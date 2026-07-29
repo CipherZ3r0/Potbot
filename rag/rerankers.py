@@ -8,7 +8,7 @@ from typing import List
 
 try:
     from sentence_transformers import CrossEncoder
-except ImportError:
+except (ImportError, AttributeError, OSError, Exception):
     CrossEncoder = None
 
 import config

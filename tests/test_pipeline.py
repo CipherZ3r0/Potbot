@@ -107,12 +107,14 @@ class TestpotbotPipeline(unittest.TestCase):
         dummy_file = DummyFile("test.txt", b"Sample uploaded document content for testing pipeline ingestion.")
         
         mock_embedder = MagicMock()
-        mock_embedder.embed_chunks.side_effect = lambda chunks: chunks
+        mock_embedder.stream_embed.side_effect = lambda chunks, **kw: iter(chunks)
         mock_embedder.get_dimension.return_value = 384
 
         mock_store = MagicMock()
         mock_store.get_stats.return_value = {"doc_count": 1}
-        mock_store.index_chunks.return_value = 1
+        def mock_stream_index(chunks, **kwargs):
+            return len(list(chunks))
+        mock_store.stream_index.side_effect = mock_stream_index
 
         pipeline = IngestionPipeline(embedder=mock_embedder, vector_store=mock_store)
         res = pipeline.run_uploaded_files([dummy_file])
