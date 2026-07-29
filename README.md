@@ -65,6 +65,23 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 │   Elasticsearch 8.x     │             │  PostgreSQL + Grafana   │
 │ (Dense Vector + BM25)   │             │ (Telemetry & Dashboards)│
 └─────────────────────────┘             └─────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          IngestionPipeline (Streaming)                          │
+│                                                                                 │
+│   1. Loaders (Threads)  ──>  Concurrent File I/O + Incremental Hash Check       │
+│   2. Chunkers (Procs)   ──>  Parallel Text Processing (Markdown, Text, PDF)     │
+│   3. Embedder (Batched) ──>  SQLite LRU Cache Check + Hardware-Accelerated ML   │
+│   4. Indexer (Stream)   ──>  Bulk Insertion into Elasticsearch                  │
+└────────┬───────────────────────────────────────┬────────────────────────────────┘
+         │                                       │
+         ▼                                       ▼
+┌─────────────────────────┐             ┌─────────────────────────┐
+│     SQLite State DB     │             │    SQLite Cache DB      │
+│ (Incremental Ingestion) │             │  (LRU Embeddings Cache) │
+└─────────────────────────┘             └─────────────────────────┘
 ```
 
 ---
@@ -75,7 +92,10 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 - 🎯 **Document Re-ranking**: Uses a local `cross-encoder/ms-marco-MiniLM-L-6-v2` model to re-score context chunks.
 - ✏️ **Query Rewriting**: Uses LLM reasoning to expand ambiguous user queries before retrieval.
 - 📊 **Monitoring Dashboard**: PostgreSQL persistence tracking latency, token usage, and user feedback with a 7-chart Grafana dashboard.
-- ⚙️ **Automated Ingestion**: Prefect flow wrapper for background execution and task retries.
+- 🚀 **High-Performance Ingestion**: Generator-based streaming architecture with ThreadPool/ProcessPool parallelism.
+- 🔄 **Incremental Ingestion**: Uses `sha256` hashing and a SQLite checkpoint database to seamlessly skip unchanged files on subsequent runs.
+- 🧠 **LRU Embedding Cache**: Local SQLite-backed embedding cache bypasses expensive ML inference for identical text chunks across files.
+- 💻 **Hardware Acceleration**: Automatic pluggable backend routing (`CUDA` → `Apple MPS` → `CPU`) with support for PyTorch and ONNX models.
 
 ---
 
@@ -174,12 +194,18 @@ llm-zoomcamp-project/
 ├── domain/                       # Domain model layer (pure dataclasses)
 │   └── models.py                 # Document, Chunk, SearchResult, RAGResponse, FeedbackRecord
 │
-├── ingestion/                    # Document ingestion pipeline
-│   ├── loaders.py                # File format loaders (PDF, DOCX, TXT, CSV)
-│   ├── chunkers.py               # Text splitting strategies
-│   ├── embedders.py              # Embedding generation (SentenceTransformer)
-│   ├── indexers.py               # Elasticsearch indexing & search
-│   └── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index
+├── ingestion/                    # High-performance document ingestion pipeline
+│   ├── backends/                 # Pluggable ML backends (PyTorch, ONNX)
+│   ├── loaders.py                # Concurrent file format loaders (PDF, DOCX, TXT, CSV)
+│   ├── chunkers.py               # Parallel text splitting strategies
+│   ├── embedders.py              # Embedding generation (Batched)
+│   ├── indexers.py               # Elasticsearch bulk indexing
+│   ├── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index (Streaming)
+│   ├── embed_cache.py            # SQLite-backed LRU embedding cache
+│   ├── state.py                  # Incremental ingestion checkpointing
+│   ├── metrics.py                # Throughput and latency tracking
+│   ├── device.py                 # Hardware acceleration detection
+│   └── config.py                 # Pipeline configuration tuning
 │
 ├── rag/                          # RAG query pipeline
 │   ├── query_rewriters.py        # LLM-based query expansion

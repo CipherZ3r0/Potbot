@@ -4,7 +4,41 @@ This document explains the "why" and "how" behind potbot's core logic, algorithm
 
 ---
 
-## 1. Document Parsing & Chunking
+## 1. Streaming & Parallelism
+
+Historically, the ingestion pipeline loaded all documents into memory, chunked them all, and then embedded them all. This caused massive memory spikes on large datasets.
+
+potbot now uses a **Producer-Consumer Streaming Architecture**:
+- **Generators**: Data flows through the pipeline (Load → Chunk → Embed → Index) one chunk at a time using Python generators (`yield`). Memory usage is strictly bounded by the `bulk_size` configuration, regardless of whether you process 10 files or 10,000.
+- **Parallelism**: 
+  - `ThreadPoolExecutor` is used during the Loading phase to read multiple files from disk concurrently (I/O-bound).
+  - `ProcessPoolExecutor` is used during the Chunking phase to parse text and split chunks across multiple CPU cores, bypassing the Python Global Interpreter Lock (GIL).
+
+---
+
+## 2. Incremental Ingestion & Checkpointing
+
+Re-processing unchanged files wastes massive amounts of time and compute. potbot solves this using a local SQLite database (`.ingest_state.db`).
+
+- **Hashing**: When ingestion starts, the system computes the `sha256` hash of every file in the target directory.
+- **Checkpoints**: It compares these hashes against the SQLite checkpoint store. If a file's hash hasn't changed since the last successful run, it is completely skipped.
+- **Resumability**: If a pipeline run fails or is interrupted halfway through, you can resume it. The checkpoint store tracks exactly which chunks have been indexed, avoiding duplicate work.
+
+---
+
+## 3. LRU Embedding Cache
+
+Generating 384-dimensional vectors via neural networks is the slowest part of ingestion. 
+
+To optimize this, potbot uses a **Least Recently Used (LRU) Embedding Cache** backed by SQLite (`.embed_cache.db`).
+- Before sending a chunk of text to the `TorchEmbeddingBackend`, the system hashes the text and checks the cache.
+- If an exact match is found, the cached vector is used instantly, bypassing the neural network.
+- This is incredibly powerful for boilerplate text (e.g., standard headers, copyright notices, or repeated tabular data across reports) that remains identical even if the rest of the file changes.
+- The cache size is bounded (e.g., max 100,000 entries) and uses sub-second precision timestamps to accurately evict the oldest entries when full.
+
+---
+
+## 4. Document Parsing & Chunking
 
 ### Why Chunking Matters
 LLMs have a finite context window (e.g., 8k or 128k tokens). You cannot feed a 500-page corporate manual into a single prompt. Furthermore, retrieving a 500-page document doesn't help the LLM pinpoint the exact answer. 
@@ -20,7 +54,7 @@ The system adapts how it chunks based on the file type:
 
 ---
 
-## 2. The Search Stack: Hybrid + Re-ranking
+## 5. The Search Stack: Hybrid + Re-ranking
 
 potbot uses a multi-stage retrieval pipeline to achieve maximum accuracy.
 
@@ -46,7 +80,7 @@ The re-ranking model (`ms-marco-MiniLM-L-6-v2`) is a **Cross-encoder**. It takes
 
 ---
 
-## 3. Query Rewriting
+## 6. Query Rewriting
 
 Users often ask lazy follow-up questions like:
 > "What is the policy?" 
@@ -56,7 +90,7 @@ potbot intercepts the question and sends it to the LLM with a hidden `SYSTEM_PRO
 
 ---
 
-## 4. Addressing System Behaviors
+## 7. Addressing System Behaviors
 
 ### Q: Why do "Indexed Chunks" seem to increase asynchronously?
 You may notice the "Indexed Chunks" metric in the sidebar updating slightly after ingestion, or appearing to increase as you use the app. 

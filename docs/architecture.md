@@ -74,6 +74,13 @@ potbot is a **Retrieval-Augmented Generation (RAG)** application for querying in
 │ • BM25 text      │  │ • Embed    │ │ • Generate │ │ • Feedback│
 │ • Hybrid search  │  │ • Rerank   │ │ • Rewrite  │ │ • Metrics│
 └──────────────────┘  └────────────┘ └────────────┘ └──────────┘
+                            ▲
+                            │
+                      ┌─────┴─────┐
+                      │  SQLITE   │
+                      │ • Caches  │
+                      │ • State   │
+                      └───────────┘
 ```
 
 ---
@@ -90,12 +97,18 @@ llm-zoomcamp-project/
 ├── domain/                       # Domain model layer (pure dataclasses)
 │   └── models.py                 # Document, Chunk, SearchResult, RAGResponse, FeedbackRecord
 │
-├── ingestion/                    # Document ingestion pipeline
-│   ├── loaders.py                # File format loaders (PDF, DOCX, TXT, CSV)
-│   ├── chunkers.py               # Text splitting strategies
-│   ├── embedders.py              # Embedding generation (SentenceTransformer)
-│   ├── indexers.py               # Elasticsearch indexing & search
-│   └── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index
+├── ingestion/                    # High-performance document ingestion pipeline
+│   ├── backends/                 # Pluggable ML backends (PyTorch, ONNX)
+│   ├── loaders.py                # Concurrent file format loaders (PDF, DOCX, TXT, CSV)
+│   ├── chunkers.py               # Parallel text splitting strategies
+│   ├── embedders.py              # Embedding generation (Batched)
+│   ├── indexers.py               # Elasticsearch bulk indexing
+│   ├── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index (Streaming)
+│   ├── embed_cache.py            # SQLite-backed LRU embedding cache
+│   ├── state.py                  # Incremental ingestion checkpointing
+│   ├── metrics.py                # Throughput and latency tracking
+│   ├── device.py                 # Hardware acceleration detection
+│   └── config.py                 # Pipeline configuration tuning
 │
 ├── rag/                          # RAG query pipeline
 │   ├── query_rewriters.py        # LLM-based query expansion
@@ -135,6 +148,9 @@ Used extensively to make components swappable without changing calling code.
 | `BaseDocumentLoader`  | `PDFDocumentLoader`, `DocxDocumentLoader`, `TextDocumentLoader`, `CSVDocumentLoader` | Different file format parsers |
 | `BaseChunker`         | `RecursiveCharacterChunker`, `MarkdownHeaderChunker`       | Different text splitting logic  |
 | `BaseEmbedder`        | `SentenceTransformerEmbedder`                              | Embedding model abstraction     |
+| `EmbeddingBackend`    | `TorchEmbeddingBackend`, `OnnxEmbeddingBackend`            | Pluggable hardware inference    |
+| `BaseEmbeddingCache`  | `SQLiteEmbeddingCache`                                     | LRU caching for embeddings      |
+| `BaseCheckpointStore` | `SQLiteCheckpointStore`                                    | Incremental run state tracking  |
 | `BaseVectorStore`     | `ElasticsearchVectorStore`                                 | Vector database abstraction     |
 | `BaseSearchStrategy`  | `VectorSearchStrategy`, `TextSearchStrategy`, `HybridSearchStrategy` | Retrieval method selection |
 | `BaseReranker`        | `CrossEncoderReranker`, `NoOpReranker`                     | Optional re-ranking             |
@@ -183,56 +199,55 @@ User provides folder path or files
             │
             ▼
    ┌─────────────────────┐
+   │ SQLiteCheckpointStore│
+   │                      │
+   │  Checks sha256 hash  │
+   │  of file content.    │
+   │  If unchanged: SKIP! │
+   └──────────┬───────────┘
+              │ (If changed/new)
+              ▼
+   ┌─────────────────────┐
    │ CompositeDocumentLoader │
+   │ (ThreadPoolExecutor)    │
    │                         │
-   │ For each file:          │
-   │  .pdf → PDFDocumentLoader (PyMuPDF, page-by-page)
-   │  .docx → DocxDocumentLoader (python-docx)
-   │  .txt/.md → TextDocumentLoader (chardet encoding detection)
-   │  .csv → CSVDocumentLoader (csv.DictReader, row-by-row)
+   │ Reads files concurrently│
    │                         │
-   │ Output: List[Document]  │  ← one Document per page (PDF) or per file (others)
+   │ Yields: Document stream │
    └──────────┬──────────────┘
               │
               ▼
    ┌─────────────────────┐
    │  CompositeChunker    │
+   │ (ProcessPoolExecutor)│
    │                      │
-   │  .md files → MarkdownHeaderChunker (split by ## headers, then recursive)
-   │  others   → RecursiveCharacterChunker (split by ¶, \n, sentence, word)
+   │ Parses text on multi-│
+   │ ple CPU cores to     │
+   │ bypass GIL.          │
    │                      │
-   │  chunk_size=1000 chars, overlap=200 chars
-   │                      │
-   │  Output: List[Chunk]  │  ← each chunk gets a unique MD5 chunk_id
+   │ Yields: Chunk stream │
    └──────────┬───────────┘
               │
               ▼
    ┌─────────────────────────────┐
    │  SentenceTransformerEmbedder │
+   │  + SQLiteEmbeddingCache      │
    │                              │
-   │  Model: all-MiniLM-L6-v2    │
-   │  Runs 100% locally (CPU)    │
-   │  Output: 384-dimensional    │
-   │  float vector per chunk     │
+   │  1. Check LRU SQLite Cache   │
+   │  2. If hit: skip ML model    │
+   │  3. If miss: run Batched     │
+   │     inference (CUDA/MPS/CPU) │
    │                              │
-   │  chunk.embedding = [0.02, -0.13, ...]
-   └──────────┬──────────────────┘
+   │ Yields: Embedded Chunk stream│
+   └──────────┬───────────────────┘
               │
               ▼
    ┌──────────────────────────────┐
    │  ElasticsearchVectorStore    │
    │                              │
-   │  1. create_index() — creates │
-   │     ES index with mapping:   │
-   │     • text → BM25 analyzed   │
-   │     • embedding → dense_vector (cosine, 384 dims)
-   │     • file_name, chunk_id,   │
-   │       doc_id, etc. → keyword │
-   │                              │
-   │  2. index_chunks() — bulk    │
-   │     inserts via ES helpers   │
-   │                              │
-   │  Each chunk = 1 ES document  │
+   │  Consumes stream in chunks   │
+   │  of `bulk_size` (e.g. 500)   │
+   │  using `helpers.streaming_bulk`│
    └──────────────────────────────┘
 ```
 
@@ -433,6 +448,10 @@ All domain objects are **plain Python dataclasses** in `domain/models.py` with n
 ### Elasticsearch (local)
 - **Used for**: Storing document chunks with both text and vector representations
 - **Why not a dedicated vector DB (Pinecone, Weaviate)?**: ES supports both BM25 text search AND dense vector kNN in a single engine, enabling hybrid search without running two databases
+
+### SQLite (local files)
+- **Used for**: Incremental ingestion checkpointing and LRU embedding caching.
+- **Why?**: Zero-dependency local storage that runs entirely in-process. Ensures unchanged files and chunks bypass expensive ML pipelines entirely, vastly accelerating re-ingestion.
 
 ### PostgreSQL (local)
 - **Used for**: Conversation history, user feedback, telemetry metrics
