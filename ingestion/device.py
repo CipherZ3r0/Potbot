@@ -87,8 +87,12 @@ def _is_available(device: str) -> bool:
 
     try:
         import torch  # type: ignore[import]
-    except ImportError:
-        logger.debug("device._is_available: torch not installed, cannot check device=%s", device)
+    except (ImportError, OSError, Exception) as exc:
+        logger.debug(
+            "device._is_available: could not import torch (device=%s): %s",
+            device,
+            exc,
+        )
         return False
 
     if device == "cuda":

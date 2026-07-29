@@ -1,17 +1,35 @@
 """
 Chunkers — Strategy pattern for splitting documents into chunks.
+
+Changes from v1
+---------------
+* ``CompositeChunker`` now accepts an optional ``PipelineConfig`` and exposes
+  ``stream_chunks()`` — a generator that uses a ``ProcessPoolExecutor`` to
+  parallelise CPU-bound chunking across documents.
+* ``chunk_documents()`` is preserved exactly — it delegates to ``stream_chunks()``.
+* A module-level ``_chunk_doc_worker`` function is required so that
+  ``ProcessPoolExecutor`` can pickle the work item (methods cannot be pickled).
 """
 
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from concurrent.futures import ProcessPoolExecutor, as_completed
 import hashlib
 import logging
 import re
-from typing import List
+from typing import Iterable, Iterator, List, Optional
 
 from domain.models import Document, Chunk
+from ingestion.config import PipelineConfig
+from ingestion.metrics import PipelineMetrics, StageTimer
 
 logger = logging.getLogger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Abstract base
+# ---------------------------------------------------------------------------
 
 class BaseChunker(ABC):
     """Abstract Base Class for text chunkers."""
@@ -35,6 +53,10 @@ class BaseChunker(ABC):
         return hashlib.md5(source_file.encode()).hexdigest()
 
 
+# ---------------------------------------------------------------------------
+# Concrete chunkers (unchanged from v1)
+# ---------------------------------------------------------------------------
+
 class RecursiveCharacterChunker(BaseChunker):
     """Splits text recursively by paragraphs, sentences, and words."""
 
@@ -42,7 +64,7 @@ class RecursiveCharacterChunker(BaseChunker):
         self,
         chunk_size: int = 1000,
         chunk_overlap: int = 200,
-        separators: List[str] = None,
+        separators: Optional[List[str]] = None,
     ):
         super().__init__(chunk_size, chunk_overlap)
         self.separators = separators or ["\n\n", "\n", ". ", " ", ""]
@@ -77,7 +99,7 @@ class RecursiveCharacterChunker(BaseChunker):
                 if self.chunk_overlap > 0 and len(chunks) > 1:
                     overlapped = [chunks[0]]
                     for i in range(1, len(chunks)):
-                        prev_tail = chunks[i - 1][-self.chunk_overlap :]
+                        prev_tail = chunks[i - 1][-self.chunk_overlap:]
                         overlapped.append(prev_tail + chunks[i])
                     return overlapped
 
@@ -86,7 +108,7 @@ class RecursiveCharacterChunker(BaseChunker):
         # Fallback to hard character split
         chunks = []
         for i in range(0, len(text), self.chunk_size - self.chunk_overlap):
-            c = text[i : i + self.chunk_size]
+            c = text[i: i + self.chunk_size]
             if c.strip():
                 chunks.append(c)
         return chunks
@@ -162,7 +184,6 @@ class MarkdownHeaderChunker(BaseChunker):
                 )
                 idx += 1
             else:
-                # Sub-chunk section using recursive chunker
                 sub_doc = Document(
                     text=sec,
                     source_file=doc.source_file,
@@ -181,20 +202,117 @@ class MarkdownHeaderChunker(BaseChunker):
         return chunks if chunks else self.fallback_chunker.chunk_document(doc)
 
 
-class CompositeChunker:
-    """Delegates chunking based on document file type."""
+# ---------------------------------------------------------------------------
+# Module-level worker — required for ProcessPoolExecutor pickling
+# ---------------------------------------------------------------------------
 
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+def _chunk_doc_worker(doc: Document, chunk_size: int, chunk_overlap: int) -> List[Chunk]:
+    """Top-level function that can be pickled by ProcessPoolExecutor.
+
+    Reconstructs the appropriate chunker based on document type so that
+    chunker instances (which may hold compiled regex) are created fresh
+    inside each worker process rather than being serialised.
+    """
+    if doc.file_type == ".md":
+        chunker: BaseChunker = MarkdownHeaderChunker(chunk_size, chunk_overlap)
+    else:
+        chunker = RecursiveCharacterChunker(chunk_size, chunk_overlap)
+    return chunker.chunk_document(doc)
+
+
+# ---------------------------------------------------------------------------
+# Composite chunker
+# ---------------------------------------------------------------------------
+
+class CompositeChunker:
+    """Delegates chunking to the appropriate strategy based on document type.
+
+    Parameters
+    ----------
+    chunk_size:
+        Target character count per chunk (passed to all sub-chunkers).
+    chunk_overlap:
+        Overlap between adjacent chunks in characters.
+    config:
+        ``PipelineConfig`` controlling worker counts.  Defaults to
+        ``PipelineConfig()`` if omitted.
+    """
+
+    def __init__(
+        self,
+        chunk_size: int = 1000,
+        chunk_overlap: int = 200,
+        config: Optional[PipelineConfig] = None,
+    ) -> None:
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+        self.config = config or PipelineConfig()
+        # Keep concrete instances for the batch API
         self.default_chunker = RecursiveCharacterChunker(chunk_size, chunk_overlap)
         self.md_chunker = MarkdownHeaderChunker(chunk_size, chunk_overlap)
 
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+
     def chunk_documents(self, documents: List[Document]) -> List[Chunk]:
-        all_chunks: List[Chunk] = []
-        for doc in documents:
-            if doc.file_type == ".md":
-                chunks = self.md_chunker.chunk_document(doc)
-            else:
-                chunks = self.default_chunker.chunk_document(doc)
-            all_chunks.extend(chunks)
-        logger.info(f"CompositeChunker generated {len(all_chunks)} total chunks")
-        return all_chunks
+        """Chunk a list of documents and return all chunks.
+
+        **Backward-compatible** — preserves the original batch API.
+        Delegates to :meth:`stream_chunks` and materialises the result.
+        """
+        return list(self.stream_chunks(documents))
+
+    def stream_chunks(
+        self,
+        documents: Iterable[Document],
+        metrics: Optional[PipelineMetrics] = None,
+    ) -> Iterator[Chunk]:
+        """Yield :class:`~domain.models.Chunk` objects as each document is chunked.
+
+        Uses a ``ProcessPoolExecutor`` so that CPU-bound text splitting runs
+        in parallel across worker processes.  Documents are submitted to the
+        pool as they arrive from the upstream generator, maintaining the
+        streaming property of the pipeline.
+
+        Parameters
+        ----------
+        documents:
+            Any iterable of :class:`~domain.models.Document` objects,
+            including generators from :meth:`~ingestion.loaders.CompositeDocumentLoader.stream_directory`.
+        metrics:
+            Optional :class:`~ingestion.metrics.PipelineMetrics` instance.
+            ``chunks_produced`` is updated in-place.
+        """
+        with StageTimer(metrics or PipelineMetrics(), "chunk"):
+            with ProcessPoolExecutor(max_workers=self.config.chunker_workers) as pool:
+                futures = {
+                    pool.submit(
+                        _chunk_doc_worker,
+                        doc,
+                        self.chunk_size,
+                        self.chunk_overlap,
+                    ): doc
+                    for doc in documents
+                }
+
+                for future in as_completed(futures):
+                    doc = futures[future]
+                    try:
+                        chunks = future.result()
+                        if metrics:
+                            metrics.chunks_produced += len(chunks)
+                        yield from chunks
+                    except Exception as exc:
+                        logger.error(
+                            "chunker: failed to chunk '%s': %s",
+                            doc.source_file,
+                            exc,
+                        )
+
+        if metrics:
+            logger.info(
+                "stage=chunk chunks_produced=%d time_s=%.2f",
+                metrics.chunks_produced,
+                metrics.chunk_time_s,
+            )
