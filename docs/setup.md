@@ -2,6 +2,31 @@
 
 Detailed instructions for installing, configuring, and running potbot — both locally (without Docker) and with Docker Compose.
 
+## 📑 Table of Contents
+
+- [🛠️ System Requirements](#️-system-requirements)
+- [🔑 Environment Configuration](#-environment-configuration)
+- [💻 Local Development Setup (Without Docker)](#-local-development-setup-without-docker)
+  - [Step 1 — Python virtual environment](#step-1--python-virtual-environment)
+  - [Step 2 — Install Python dependencies](#step-2--install-python-dependencies)
+  - [Step 3 — Install & Run Elasticsearch Locally](#step-3--install--run-elasticsearch-locally)
+  - [Step 4 — Install & Run PostgreSQL Locally](#step-4--install--run-postgresql-locally)
+  - [Step 5 — Update `.env`](#step-5--update-env-for-local-development)
+  - [Step 6 — Run the application](#step-6--run-the-application)
+  - [Step 7 — Run unit tests](#step-7--run-unit-tests-optional)
+- [🐳 Docker Deployment (All Services)](#-docker-deployment-all-services)
+  - [Prerequisites](#prerequisites)
+  - [Step 1 — Set Docker host values](#step-1--set-docker-host-values-in-env)
+  - [Step 2 — Build and start containers](#step-2--build-and-start-all-containers)
+  - [Step 3 — Verify services](#step-3--verify-services-are-healthy)
+  - [Step 4 — View logs](#step-4--view-logs)
+  - [Step 5 — Access the application](#step-5--access-the-application)
+  - [Step 6 — Stop all services](#step-6--stop-all-services)
+- [🤗 About Hugging Face & the Embedding Model](#-about-hugging-face--the-embedding-model)
+  - [How it works](#how-it-works)
+  - [Are there usage limits?](#are-there-usage-limits)
+  - [Working in an air-gapped / offline environment](#working-in-an-air-gapped--offline-environment)
+
 ## 🛠️ System Requirements
 
 | Requirement     | Minimum        | Recommended      |
