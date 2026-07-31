@@ -19,6 +19,7 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 from domain.models import FeedbackRecord
+from ingestion.loaders import CompositeDocumentLoader
 from ingestion.pipeline import IngestionPipeline
 from rag.pipeline import RAGPipeline
 from app.database import PostgresDatabaseRepository
@@ -413,9 +414,10 @@ with st.sidebar:
     tab_files, tab_folder = st.tabs(["Upload", "Folder"])
 
     with tab_files:
+        supported_types = CompositeDocumentLoader.get_supported_extensions_without_dot()
         uploaded_files = st.file_uploader(
             "Drop documents here",
-            type=["pdf", "docx", "txt", "md", "csv"],
+            type=supported_types,
             accept_multiple_files=True,
             label_visibility="collapsed"
         )

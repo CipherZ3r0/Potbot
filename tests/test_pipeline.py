@@ -121,7 +121,44 @@ class TestpotbotPipeline(unittest.TestCase):
         self.assertEqual(res["status"], "success")
         self.assertEqual(res["doc_count"], 1)
 
+    def test_code_document_loader_and_chunker(self):
+        import tempfile
+        import os
+        from ingestion.loaders import CodeDocumentLoader, CompositeDocumentLoader
+        from ingestion.chunkers import CodeChunker
+
+        loader = CodeDocumentLoader()
+        self.assertTrue(loader.can_load(".py"))
+        self.assertTrue(loader.can_load(".json"))
+        self.assertTrue(loader.can_load(".yaml"))
+        self.assertTrue(loader.can_load(".sql"))
+
+        # Test dynamic extension helper
+        exts = CompositeDocumentLoader.get_supported_extensions_without_dot()
+        self.assertIn("py", exts)
+        self.assertIn("json", exts)
+        self.assertIn("pdf", exts)
+
+        # Create temporary python file
+        py_content = "class DataProcessor:\n    def process(self):\n        pass\n\ndef main():\n    print('hello')\n"
+        with tempfile.NamedTemporaryFile("w", suffix=".py", delete=False) as f:
+            f.write(py_content)
+            temp_path = f.name
+
+        try:
+            docs = loader.load(temp_path)
+            self.assertEqual(len(docs), 1)
+            self.assertEqual(docs[0].file_type, ".py")
+
+            chunker = CodeChunker(chunk_size=50, chunk_overlap=10)
+            chunks = chunker.chunk_document(docs[0])
+            self.assertGreaterEqual(len(chunks), 1)
+            self.assertTrue(all(c.file_type == ".py" for c in chunks))
+        finally:
+            os.remove(temp_path)
+
 
 if __name__ == "__main__":
     unittest.main()
+
 

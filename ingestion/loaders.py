@@ -134,10 +134,12 @@ class DocxDocumentLoader(BaseDocumentLoader):
 
 
 class TextDocumentLoader(BaseDocumentLoader):
-    """Loader for plain text (.txt) and Markdown (.md) files."""
+    """Loader for plain text (.txt), Markdown (.md), reStructuredText (.rst), and log/env files."""
+
+    SUPPORTED_EXTENSIONS = {".txt", ".md", ".rst", ".log", ".env", ".ini", ".cfg"}
 
     def can_load(self, file_extension: str) -> bool:
-        return file_extension.lower() in {".txt", ".md"}
+        return file_extension.lower() in self.SUPPORTED_EXTENSIONS
 
     def load(self, filepath: str) -> List[Document]:
         try:
@@ -165,12 +167,15 @@ class TextDocumentLoader(BaseDocumentLoader):
 
 
 class CSVDocumentLoader(BaseDocumentLoader):
-    """Loader for CSV documents."""
+    """Loader for CSV, TSV, and JSONL tabular documents."""
+
+    SUPPORTED_EXTENSIONS = {".csv", ".tsv", ".jsonl"}
 
     def can_load(self, file_extension: str) -> bool:
-        return file_extension.lower() == ".csv"
+        return file_extension.lower() in self.SUPPORTED_EXTENSIONS
 
     def load(self, filepath: str) -> List[Document]:
+        ext = Path(filepath).suffix.lower()
         try:
             with open(filepath, "rb") as f:
                 raw = f.read()
@@ -179,25 +184,70 @@ class CSVDocumentLoader(BaseDocumentLoader):
                 encoding = chardet.detect(raw).get("encoding", "utf-8") or "utf-8"
             text = raw.decode(encoding, errors="replace")
 
-            reader = csv.DictReader(text.splitlines())
-            rows = []
-            for row in reader:
-                row_str = " | ".join(f"{k}: {v}" for k, v in row.items() if v)
-                if row_str.strip():
-                    rows.append(row_str)
+            if ext in {".csv", ".tsv"}:
+                delimiter = "\t" if ext == ".tsv" else ","
+                reader = csv.DictReader(text.splitlines(), delimiter=delimiter)
+                rows = []
+                for row in reader:
+                    row_str = " | ".join(f"{k}: {v}" for k, v in row.items() if v)
+                    if row_str.strip():
+                        rows.append(row_str)
+                full_text = "\n".join(rows)
+            else:  # .jsonl
+                full_text = "\n".join(line.strip() for line in text.splitlines() if line.strip())
 
-            if rows:
+            if full_text.strip():
                 return [
                     Document(
-                        text="\n".join(rows),
+                        text=full_text,
                         source_file=os.path.abspath(filepath),
                         file_name=os.path.basename(filepath),
-                        file_type=".csv",
+                        file_type=ext,
                         modified_date=self._get_modified_date(filepath),
                     )
                 ]
         except Exception as e:
-            logger.error("Failed to read CSV '%s': %s", filepath, e)
+            logger.error("Failed to read tabular file '%s': %s", filepath, e)
+        return []
+
+
+class CodeDocumentLoader(BaseDocumentLoader):
+    """Loader for programming source code, web markup, and structured data files."""
+
+    SUPPORTED_EXTENSIONS = {
+        # Programming & Scripting Languages
+        ".py", ".js", ".jsx", ".ts", ".tsx", ".c", ".cpp", ".h", ".hpp",
+        ".java", ".go", ".rs", ".rb", ".php", ".cs", ".sh", ".bash", ".zsh",
+        ".sql", ".r", ".swift", ".kt", ".scala", ".lua",
+        # Structured Data & Web Markup
+        ".json", ".yaml", ".yml", ".toml", ".xml", ".html", ".css"
+    }
+
+    def can_load(self, file_extension: str) -> bool:
+        return file_extension.lower() in self.SUPPORTED_EXTENSIONS
+
+    def load(self, filepath: str) -> List[Document]:
+        try:
+            with open(filepath, "rb") as f:
+                raw = f.read()
+            encoding = "utf-8"
+            if chardet is not None:
+                encoding = chardet.detect(raw).get("encoding", "utf-8") or "utf-8"
+            text = raw.decode(encoding, errors="replace").strip()
+
+            if text:
+                ext = Path(filepath).suffix.lower()
+                return [
+                    Document(
+                        text=text,
+                        source_file=os.path.abspath(filepath),
+                        file_name=os.path.basename(filepath),
+                        file_type=ext,
+                        modified_date=self._get_modified_date(filepath),
+                    )
+                ]
+        except Exception as e:
+            logger.error("Failed to read code/config file '%s': %s", filepath, e)
         return []
 
 
@@ -218,18 +268,40 @@ class CompositeDocumentLoader:
         Defaults to a ``PipelineConfig()`` with library defaults if omitted.
     """
 
+    DEFAULT_LOADERS: List[BaseDocumentLoader] = [
+        PDFDocumentLoader(),
+        DocxDocumentLoader(),
+        TextDocumentLoader(),
+        CSVDocumentLoader(),
+        CodeDocumentLoader(),
+    ]
+
     def __init__(
         self,
         loaders: Optional[List[BaseDocumentLoader]] = None,
         config: Optional[PipelineConfig] = None,
     ) -> None:
-        self.loaders = loaders or [
-            PDFDocumentLoader(),
-            DocxDocumentLoader(),
-            TextDocumentLoader(),
-            CSVDocumentLoader(),
-        ]
+        self.loaders = loaders or self.DEFAULT_LOADERS
         self.config = config or PipelineConfig()
+
+    @classmethod
+    def get_supported_extensions(cls) -> List[str]:
+        """Return a sorted list of all supported file extensions with leading dot."""
+        exts = set()
+        for ldr in cls.DEFAULT_LOADERS:
+            if hasattr(ldr, "SUPPORTED_EXTENSIONS"):
+                exts.update(ldr.SUPPORTED_EXTENSIONS)
+            elif isinstance(ldr, PDFDocumentLoader):
+                exts.add(".pdf")
+            elif isinstance(ldr, DocxDocumentLoader):
+                exts.add(".docx")
+        return sorted(exts)
+
+    @classmethod
+    def get_supported_extensions_without_dot(cls) -> List[str]:
+        """Return a sorted list of all supported file extensions without leading dot (for UI components)."""
+        return [ext.lstrip(".") for ext in cls.get_supported_extensions()]
+
 
     # ------------------------------------------------------------------
     # Public API

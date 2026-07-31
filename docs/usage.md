@@ -17,8 +17,8 @@ This generates documents in `data/sample_documents/`:
 
 ## 2. Ingesting Documents via Streamlit UI
 1. Open Streamlit UI (`http://localhost:8501`).
-2. In the sidebar under **Document Ingestion**, enter the absolute path to your document folder (e.g., `data/sample_documents` or `/app/data/sample_documents`).
-3. Click **🚀 Ingest Documents**.
+2. In the sidebar under **Knowledge Base**, drag-and-drop individual files or enter the absolute path to your document/code folder (e.g., `data/sample_documents` or `/app/data/sample_documents`). Supports documents (`.pdf`, `.docx`, `.txt`, `.md`), data (`.csv`, `.tsv`, `.jsonl`), source code (`.py`, `.js`, `.ts`, `.cpp`, `.java`, `.go`, `.rs`, `.sql`, `.sh`), and config files (`.json`, `.yaml`, `.toml`, `.xml`, `.html`, `.css`, `.env`).
+3. Click **Ingest Files** or **Ingest Folder**.
 4. The system will scan, chunk, embed, and index all documents into Elasticsearch.
 5. **Incremental Runs**: If you re-ingest the exact same folder later, the system will instantly skip unchanged files using a SQLite state checkpoint. Identical text snippets across files will bypass heavy ML inference using the LRU embedding cache, dramatically accelerating the ingestion process.
 
