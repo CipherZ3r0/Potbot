@@ -27,15 +27,18 @@ Detailed instructions for installing, configuring, and running potbot — both l
   - [Are there usage limits?](#are-there-usage-limits)
   - [Working in an air-gapped / offline environment](#working-in-an-air-gapped--offline-environment)
 
-## 🛠️ System Requirements
+## 🛠️ System Requirements & Version Compatibility
 
-| Requirement     | Minimum        | Recommended      |
-|-----------------|----------------|------------------|
-| OS              | Windows 10/11, Linux, macOS | Same |
-| Python          | 3.11+          | 3.11             |
-| RAM             | 8 GB           | 16 GB            |
-| Disk            | 5 GB free      | 10 GB free       |
-| Docker (optional) | Docker Desktop 4.x | Latest       |
+| Requirement     | Supported Versions | Recommended | Notes |
+|-----------------|-------------------|-------------|-------|
+| OS              | Linux, macOS, Windows 10/11 | Linux / macOS | Tested on Linux x86_64 |
+| Python          | `3.10.x`, `3.11.x`, `3.12.x` | `3.11.x` | Primary production target: Python 3.11 |
+| Streamlit       | `1.35.0` – `1.45.x` | `1.45.1` | Configured with `fileWatcherType = "none"` in `.streamlit/config.toml` |
+| PyTorch / Torch | `2.0.0` – `2.6.x` | `2.13.0` (or `2.x`) | CPU / CUDA / Apple MPS supported |
+| RAM             | 8 GB minimum | 16 GB | Required for parallel embedding batching |
+| Disk            | 5 GB free | 10 GB free | Vector cache & Docker images |
+| Docker          | Docker Desktop 4.x / Engine 24+ | Latest | Multi-container setup via Docker Compose |
+
 
 ---
 
@@ -386,14 +389,16 @@ docker-compose down
 docker-compose down -v
 ```
 
-### Troubleshooting Docker Deployment
+### Troubleshooting & Framework Notes
 
-| Symptom | Fix |
-|---------|-----|
-| Container keeps restarting | Check logs: `docker-compose logs elasticsearch`. Often an OOM kill — increase Docker memory to 4 GB+. |
-| `elasticsearch` health check fails | ES takes 30–60 seconds to start. Wait and re-check with `docker-compose ps`. |
-| Port already in use | Another process is using 9200/5432/8501. Stop it or change the port mapping in `docker-compose.yml`. |
-| `.env` changes not picked up | Run `docker-compose down && docker-compose up --build -d` to rebuild. |
+| Symptom / Issue | Cause | Fix / Resolution |
+|-----------------|-------|------------------|
+| Streamlit crash: `RuntimeError: Tried to instantiate class '__path__._path'` | PyTorch 2.x modules in `sys.modules` break Streamlit's default file watcher inspection. | **Permanent Fix**: `.streamlit/config.toml` is configured with `[server] fileWatcherType = "none"`. |
+| Postgres authentication error (`FATAL: password authentication failed`) | `.env` credentials don't match `docker-compose.yml`. | Standardize `.env` values (`POSTGRES_USER=potbot`, `POSTGRES_DB=potbot`, `POSTGRES_PASSWORD=potbot_secret`). |
+| Container keeps restarting | Memory exhaustion on large embeddings. | Increase Docker RAM allocation to 4 GB+ or reduce `INGESTION_EMBED_BATCH_SIZE` in `.env`. |
+| `elasticsearch` health check fails | Elasticsearch JVM warmup takes 30–60s. | Wait for container initialization and verify with `docker-compose ps`. |
+| Port already in use | Host port conflict on 9200, 5432, or 8501. | Stop conflicting host process or adjust host port mapping in `docker-compose.yml`. |
+
 
 ---
 

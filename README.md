@@ -1,6 +1,6 @@
 # Potbot — Enterprise Internal Document Intelligence System
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https.python.org)
+[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://docker.com)
 
 **Potbot** is an end-to-end, enterprise-grade Retrieval-Augmented Generation (RAG) system designed for organizations to instantly turn internal document folders into a searchable, private knowledge base. All vector embeddings are generated locally on-device — ensuring zero data leakage — while fast response generation is powered by Groq's LLM engine.
