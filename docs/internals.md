@@ -47,10 +47,12 @@ We break documents down into **chunks** (default 1000 characters with 200 charac
 - **Overlap** prevents cutting a crucial sentence in half.
 - **Chunk Size** balances between having enough context to make sense, and being small enough to retrieve highly relevant specific snippets.
 
-### How it Works (CompositeChunker)
-The system adapts how it chunks based on the file type:
+### How it Works (CompositeDocumentLoader & CompositeChunker)
+The system adapts how it loads and chunks based on the file type:
+- **Source Code & Config (`.py`, `.js`, `.ts`, `.cpp`, `.java`, `.go`, `.rs`, `.sql`, `.sh`, `.json`, `.yaml`, `.toml`, `.html`, `.css`, etc.)**: Uses `CodeDocumentLoader` to preserve formatting and character encoding, followed by `CodeChunker`. `CodeChunker` splits code along logical code boundaries (`class `, `def `, `async def `, `function `, `public class `, `func `, `fn `, etc.) so functions and class definitions stay coherent.
 - **Markdown (`.md`)**: Uses `MarkdownHeaderChunker`. It uses regex (`^#{1,6}`) to split the document logically by headers (e.g., keeping "Section 2" together). If a section is still too large, it falls back to character splitting.
-- **Other text/PDFs**: Uses `RecursiveCharacterChunker`. It tries to split gracefully on paragraphs (`\n\n`), then lines (`\n`), then sentences (`. `), and finally words.
+- **Other text/PDFs/DOCX**: Uses `RecursiveCharacterChunker`. It tries to split gracefully on paragraphs (`\n\n`), then lines (`\n`), then sentences (`. `), and finally words.
+- **Tabular Data (`.csv`, `.tsv`, `.jsonl`)**: Uses `CSVDocumentLoader` to format records into key-value context strings.
 
 ---
 

@@ -25,7 +25,7 @@
 Modern enterprises manage thousands of unstructured internal documents standard operating procedures (SOPs), company policies, engineering handbooks, and financial reports. Navigating these files manually is slow, error-prone, and inefficient.
 
 **Potbot** solves this problem by providing:
-1. **Automated Document Ingestion**: Select any folder containing PDFs, Word files, Markdown notes, or CSVs; the system automatically extracts text, chunks content, generates embeddings, and indexes everything into a hybrid search database.
+1. **Automated Document & Code Ingestion**: Select any folder containing documents (PDFs, Word files, Markdown, plain text), tabular data (CSV, TSV, JSONL), source code (`.py`, `.js`, `.ts`, `.cpp`, `.java`, `.go`, `.rs`, `.sql`, `.sh`), or configuration files (`.json`, `.yaml`, `.toml`, `.xml`, `.html`, `.css`, `.env`); the system automatically extracts text, chunks content, generates embeddings, and indexes everything into a hybrid search database.
 2. **Data Privacy**: Vector embeddings and re-ranking models run 100% locally on-device.
 3. **Hybrid RAG Intelligence**: Combines sparse keyword search (BM25) with dense vector search (kNN) using Reciprocal Rank Fusion (RRF), cross-encoder re-ranking, and query expansion.
 
@@ -35,9 +35,9 @@ Modern enterprises manage thousands of unstructured internal documents standard 
 
 The codebase is built following **Clean Architecture** and Object-Oriented Design (OOD) principles:
 
-- **Strategy Pattern**: Interchangeable search retrieval strategies (`VectorSearchStrategy`, `TextSearchStrategy`, `HybridSearchStrategy`) and document chunkers.
+- **Strategy Pattern**: Interchangeable search retrieval strategies (`VectorSearchStrategy`, `TextSearchStrategy`, `HybridSearchStrategy`), document loaders (`PDFDocumentLoader`, `DocxDocumentLoader`, `TextDocumentLoader`, `CSVDocumentLoader`, `CodeDocumentLoader`), and chunkers (`RecursiveCharacterChunker`, `MarkdownHeaderChunker`, `CodeChunker`).
 - **Factory Pattern**: `SearchStrategyFactory` for dynamic strategy instantiation.
-- **Composite Pattern**: `CompositeDocumentLoader` and `CompositeChunker` delegating to specialized handlers by file format (`PDF`, `DOCX`, `MD`, `TXT`, `CSV`).
+- **Composite Pattern**: `CompositeDocumentLoader` and `CompositeChunker` delegating to specialized handlers by file format and exposing dynamic extension registries.
 - **Repository Pattern**: `PostgresDatabaseRepository` abstraction separating domain models from database access.
 - **Facade Pattern**: `RAGPipeline` and `IngestionPipeline` encapsulating complex workflows behind simple interfaces.
 - **Dependency Injection**: Loose coupling across all services.

@@ -202,6 +202,33 @@ class MarkdownHeaderChunker(BaseChunker):
         return chunks if chunks else self.fallback_chunker.chunk_document(doc)
 
 
+class CodeChunker(BaseChunker):
+    """Splits source code and structured documents using language-aware boundaries."""
+
+    CODE_EXTENSIONS = {
+        ".py", ".js", ".jsx", ".ts", ".tsx", ".c", ".cpp", ".h", ".hpp",
+        ".java", ".go", ".rs", ".rb", ".php", ".cs", ".sh", ".bash", ".zsh",
+        ".sql", ".r", ".swift", ".kt", ".scala", ".lua",
+        ".json", ".yaml", ".yml", ".toml", ".xml", ".html", ".css"
+    }
+
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        super().__init__(chunk_size, chunk_overlap)
+        code_separators = [
+            "\nclass ", "\ndef ", "\nasync def ", "\nfunction ",
+            "\npublic class ", "\nprivate ", "\npublic ", "\nfunc ", "\nfn ",
+            "\n\n", "\n", " ", ""
+        ]
+        self.chunker = RecursiveCharacterChunker(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+            separators=code_separators,
+        )
+
+    def chunk_document(self, doc: Document) -> List[Chunk]:
+        return self.chunker.chunk_document(doc)
+
+
 # ---------------------------------------------------------------------------
 # Module-level worker — required for ProcessPoolExecutor pickling
 # ---------------------------------------------------------------------------
@@ -215,6 +242,8 @@ def _chunk_doc_worker(doc: Document, chunk_size: int, chunk_overlap: int) -> Lis
     """
     if doc.file_type == ".md":
         chunker: BaseChunker = MarkdownHeaderChunker(chunk_size, chunk_overlap)
+    elif doc.file_type in CodeChunker.CODE_EXTENSIONS:
+        chunker = CodeChunker(chunk_size, chunk_overlap)
     else:
         chunker = RecursiveCharacterChunker(chunk_size, chunk_overlap)
     return chunker.chunk_document(doc)
@@ -250,6 +279,8 @@ class CompositeChunker:
         # Keep concrete instances for the batch API
         self.default_chunker = RecursiveCharacterChunker(chunk_size, chunk_overlap)
         self.md_chunker = MarkdownHeaderChunker(chunk_size, chunk_overlap)
+        self.code_chunker = CodeChunker(chunk_size, chunk_overlap)
+
 
     # ------------------------------------------------------------------
     # Public API
