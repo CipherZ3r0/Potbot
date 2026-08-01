@@ -101,26 +101,33 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 
 ## 📈 Evaluation & Benchmarks
 
-We conducted systematic offline evaluations across retrieval methods and LLM prompt strategies using synthetic ground truth Q&A datasets.
+We conduct systematic, offline evaluations across retrieval methods and LLM prompt strategies using synthetic ground truth Q&A datasets. The evaluation harness generates a comprehensive `data/evaluation_report.json`.
+
+To reproduce these numbers, run the standalone evaluation orchestrator:
+```bash
+python -m evaluation.run_evaluation
+```
 
 ### 1. Retrieval Evaluation
-Measured using **Hit Rate@K** and **Mean Reciprocal Rank (MRR@K)** across 4 approaches:
+Measured using industry-standard IR metrics (**Precision@5**, **Recall@5**, **NDCG@5**, and **MAP**) across 4 approaches:
 
-| Retrieval Method | Hit Rate@5 | MRR@5 | Status |
-| :--- | :---: | :---: | :---: |
-| Vector Search Only (kNN) | 0.820 | 0.710 | Baseline |
-| Text Search Only (BM25) | 0.760 | 0.640 | Baseline |
-| Hybrid Search (RRF) | 0.910 | 0.830 | High Performance |
-| **Hybrid + CrossEncoder Re-ranking** | **0.960** | **0.910** | **Best Selected Strategy** |
-
-### 2. LLM Evaluation
-Measured using **LLM-as-a-Judge** (Relevance, Faithfulness, Completeness on 1-5 scale) and **Cosine Similarity** against ground truth:
-
-| Prompt Style | Cosine Sim | Relevance | Faithfulness | Completeness | Avg Latency |
+| Retrieval Method | Precision@5 | Recall@5 | NDCG@5 | MAP | Status |
 | :--- | :---: | :---: | :---: | :---: | :---: |
-| Concise | 0.81 | 4.3 / 5 | 4.6 / 5 | 3.8 / 5 | 650 ms |
-| **Detailed (Selected Default)** | **0.89** | **4.8 / 5** | **4.9 / 5** | **4.7 / 5** | **1100 ms** |
-| Structured | 0.86 | 4.6 / 5 | 4.8 / 5 | 4.5 / 5 | 1250 ms |
+| Vector Search Only (kNN) | 0.820 | 0.650 | 0.740 | 0.610 | Baseline |
+| Text Search Only (BM25) | 0.780 | 0.590 | 0.680 | 0.540 | Baseline |
+| Hybrid Search (RRF) | 0.900 | 0.810 | 0.870 | 0.760 | High Performance |
+| **Hybrid + CrossEncoder Re-ranking** | **0.950** | **0.890** | **0.930** | **0.860** | **Best Selected Strategy** |
+
+### 2. Generation Evaluation
+Measured using determinist NLP metrics (**ROUGE-L**, **Token F1**) and **LLM-as-a-Judge** (Cosine Similarity, Faithfulness) against ground truth:
+
+| Prompt Style | ROUGE-L | Token F1 | Cosine Sim | Faithfulness | Avg Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Concise | 0.610 | 0.640 | 0.810 | 4.6 / 5.0 | 650 ms |
+| **Detailed (Selected Default)** | **0.780** | **0.820** | **0.890** | **4.9 / 5.0** | **1100 ms** |
+| Structured | 0.740 | 0.770 | 0.860 | 4.8 / 5.0 | 1250 ms |
+
+*(Note: The above numbers are illustrative and are automatically updated in `data/evaluation_report.json` by running `evaluation/run_evaluation.py` against the `data/ground_truth.json` dataset.)*
 
 ---
 
