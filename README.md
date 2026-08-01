@@ -148,8 +148,8 @@ Potbot automatically logs every interaction into PostgreSQL, which feeds a real-
 
 ### Step 1: Clone & Configure Environment
 ```bash
-git clone https://github.com/your-username/llm-zoomcamp-project.git
-cd llm-zoomcamp-project
+git clone https://github.com/CipherZ3r0/Potbot.git
+cd Potbot
 
 # Create .env file from template
 cp .env.example .env
@@ -159,7 +159,7 @@ Edit `.env` and insert your `GROQ_API_KEY`:
 GROQ_API_KEY=gsk_your_actual_groq_api_key_here
 ```
 
-### Step 2: Generate Sample Test Documents
+### Step 2: Generate Sample Test Documents (optional)
 ```bash
 python scripts/generate_sample_documents.py
 ```
@@ -175,7 +175,7 @@ Access services:
 - **Grafana Monitoring Dashboard**: `http://localhost:3000` (User: `admin`, Password: `admin`)
 - **Elasticsearch Cluster**: `http://localhost:9200`
 
-### Step 4: Run Unit Tests
+### Step 4: Run Unit Tests (optional)
 ```bash
 python -m unittest discover tests
 ```
