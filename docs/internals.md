@@ -88,7 +88,28 @@ Users often ask lazy follow-up questions like:
 > "What is the policy?" 
 
 If you search for that exact string, the vector database will return random policies.
-potbot intercepts the question and sends it to the LLM with a hidden `SYSTEM_PROMPT` (inside `LLMQueryRewriter`). The LLM rewrites the query to make it search-friendly (e.g., expanding abbreviations, adding context) *before* the database search happens.
+Potbot intercepts the question and sends it to the LLM with a hidden `SYSTEM_PROMPT` (inside `LLMQueryRewriter`). The LLM rewrites the query to make it search-friendly (e.g., expanding abbreviations, adding context) *before* the database search happens.
+
+### LLM Provider Abstraction
+
+`LLMQueryRewriter` does **not** call any specific LLM SDK directly. Instead, it depends on `BaseLLMProvider` — an abstract interface with a single `generate()` method. The concrete provider is injected at construction time (or lazily created via `create_llm_provider()` on first use).
+
+```
+LLMQueryRewriter
+    │
+    └── BaseLLMProvider.generate(messages)
+            │
+            ├── GroqLLMProvider    (LLM_PROVIDER=groq, default)
+            │     └── Groq SDK → cloud API
+            │
+            └── OllamaLLMProvider  (LLM_PROVIDER=ollama)
+                  └── HTTP POST /v1/chat/completions → local Ollama
+```
+
+This means:
+- **Business logic is provider-agnostic** — the RAG pipeline and query rewriter work identically regardless of whether Groq or Ollama is running.
+- **Easy to test** — inject a `MagicMock()` that satisfies `BaseLLMProvider` in tests; no network needed.
+- **Easy to extend** — add a third provider by creating a new class and one dict entry in `create_llm_provider()`.
 
 ---
 

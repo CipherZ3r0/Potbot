@@ -51,11 +51,27 @@ cp .env.example .env          # Linux / macOS / Git Bash
 copy .env.example .env        # Windows CMD
 ```
 
-Open `.env` and set your values. The most important variable is your **Groq API key**:
+Open `.env` and set the most important variables. The default provider is **Groq** — if you want a fully local setup with Ollama instead, see the block below.
 
+#### Option A — Groq (cloud, default)
 ```env
+LLM_PROVIDER=groq
 GROQ_API_KEY=gsk_your_groq_api_key_here
+LLM_MODEL=llama-3.3-70b-versatile
 ```
+Get a free Groq key at https://console.groq.com/
+
+#### Option B — Ollama (local / offline)
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+```
+Ollama must be installed and running (`ollama serve`). Pull a model once:
+```bash
+ollama pull llama3   # or: ollama pull mistral, gemma2, phi3, etc.
+```
+See https://ollama.com/ for the full model library.
 
 ### Ingestion Tuning (Optional)
 You can tune the ingestion pipeline's performance and memory usage by adding these optional variables to your `.env`:
@@ -77,12 +93,13 @@ INGESTION_EMBED_CACHE_ENABLED=true   # Cache vector embeddings in sqlite
 
 ### Local vs Docker host values
 
-| Variable             | Local Development      | Docker Deployment           |
-|----------------------|------------------------|-----------------------------|
-| `ELASTICSEARCH_HOST` | `http://localhost:9200` | `http://elasticsearch:9200` |
-| `POSTGRES_HOST`      | `localhost`             | `postgres`                  |
+| Variable             | Local Development       | Docker Deployment           |
+|----------------------|-------------------------|---------------------------------|
+| `ELASTICSEARCH_HOST` | `http://localhost:9200` | `http://elasticsearch:9200`     |
+| `POSTGRES_HOST`      | `localhost`             | `postgres`                      |
+| `OLLAMA_BASE_URL`    | `http://localhost:11434`| `http://ollama:11434` *(profile)*|
 
-> **Important**: If you switch between local and Docker modes, update these two values in `.env` accordingly.
+> **Important**: If you switch between local and Docker modes, update the host values in `.env` accordingly.
 
 ---
 
@@ -297,6 +314,8 @@ Make sure your `.env` has these values (not Docker service names):
 ```env
 ELASTICSEARCH_HOST=http://localhost:9200
 POSTGRES_HOST=localhost
+# Ollama (if LLM_PROVIDER=ollama):
+OLLAMA_BASE_URL=http://localhost:11434
 ```
 
 ---
@@ -313,7 +332,7 @@ Open http://localhost:8501 in your browser.
 ### Step 7 — Run unit tests (optional)
 
 ```bash
-python -m unittest discover tests
+pytest tests/ -v
 ```
 
 ---
@@ -327,29 +346,53 @@ Use this when you want to run **everything** (Elasticsearch, PostgreSQL, Grafana
 - Docker Desktop installed and running
 - At least 4 GB RAM allocated to Docker (Settings → Resources → Memory)
 
-### Step 1 — Set Docker host values in `.env`
+### Step 1 — Configure `.env` for Docker
 
 ```env
+# Host values for Docker service names
 ELASTICSEARCH_HOST=http://elasticsearch:9200
 POSTGRES_HOST=postgres
+
+# --- LLM Provider ---
+# Option A: Groq (default)
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+
+# Option B: Ollama (local, used with --profile ollama)
+# LLM_PROVIDER=ollama
+# OLLAMA_BASE_URL=http://ollama:11434
+# OLLAMA_MODEL=llama3
 ```
 
-> Inside Docker Compose, services reference each other by **service name** (e.g. `elasticsearch`, `postgres`), not `localhost`.
+> Inside Docker Compose, services reference each other by **service name** (`elasticsearch`, `postgres`, `ollama`), not `localhost`.
 
 ### Step 2 — Build and start all containers
 
+#### Option A — Groq provider (default)
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
 ```
 
-This starts four services:
+#### Option B — Ollama provider (local/offline)
+```bash
+# Start all services including the Ollama container
+LLM_PROVIDER=ollama docker compose --profile ollama up --build -d
 
-| Service          | Port  | Description                    |
-|------------------|-------|--------------------------------|
-| `elasticsearch`  | 9200  | Vector + text search engine    |
-| `postgres`       | 5432  | Feedback & telemetry database  |
-| `grafana`        | 3000  | Monitoring dashboards          |
-| `streamlit-app`  | 8501  | The potbot application      |
+# Pull a model into the running Ollama container (first time only)
+docker exec -it potbot-ollama ollama pull llama3
+```
+
+> The `--profile ollama` flag activates the optional `ollama` service defined in `docker-compose.yml`. Without this flag, Ollama is completely excluded — existing Groq users are unaffected.
+
+This starts these services:
+
+| Service          | Profile  | Port  | Description                    |
+|------------------|----------|-------|--------------------------------|
+| `elasticsearch`  | default  | 9200  | Vector + text search engine    |
+| `postgres`       | default  | 5432  | Feedback & telemetry database  |
+| `grafana`        | default  | 3000  | Monitoring dashboards          |
+| `streamlit-app`  | default  | 8501  | The Potbot application         |
+| `ollama`         | `ollama` | 11434 | Local LLM server (optional)    |
 
 > **Note**: The ingestion pipeline uses two local SQLite files (`.embed_cache.db` and `.ingest_state.db`) for caching and incremental runs. These are stored locally in the project root and are mounted or written directly by the application. They are safely ignored by git.
 
@@ -373,20 +416,24 @@ docker-compose logs -f streamlit-app
 
 ### Step 5 — Access the application
 
-| Service     | URL                     | Credentials            |
-|-------------|-------------------------|------------------------|
-| potbot   | http://localhost:8501    | —                      |
-| Grafana     | http://localhost:3000    | `admin` / `admin`      |
-| Elasticsearch | http://localhost:9200 | —                      |
+| Service         | URL                      | Credentials       |
+|-----------------|--------------------------|-------------------|
+| Potbot          | http://localhost:8501    | —                 |
+| Grafana         | http://localhost:3000    | `admin` / `admin` |
+| Elasticsearch   | http://localhost:9200    | —                 |
+| Ollama *(profile)* | http://localhost:11434| —                 |
 
 ### Step 6 — Stop all services
 
 ```bash
 # Stop containers (preserves data volumes):
-docker-compose down
+docker compose down
 
 # Stop and DELETE all data (fresh start):
-docker-compose down -v
+docker compose down -v
+
+# Stop only the Ollama container (leave rest running):
+docker compose --profile ollama stop ollama
 ```
 
 ### Troubleshooting & Framework Notes
@@ -396,8 +443,10 @@ docker-compose down -v
 | Streamlit crash: `RuntimeError: Tried to instantiate class '__path__._path'` | PyTorch 2.x modules in `sys.modules` break Streamlit's default file watcher inspection. | **Permanent Fix**: `.streamlit/config.toml` is configured with `[server] fileWatcherType = "none"`. |
 | Postgres authentication error (`FATAL: password authentication failed`) | `.env` credentials don't match `docker-compose.yml`. | Standardize `.env` values (`POSTGRES_USER=potbot`, `POSTGRES_DB=potbot`, `POSTGRES_PASSWORD=potbot_secret`). |
 | Container keeps restarting | Memory exhaustion on large embeddings. | Increase Docker RAM allocation to 4 GB+ or reduce `INGESTION_EMBED_BATCH_SIZE` in `.env`. |
-| `elasticsearch` health check fails | Elasticsearch JVM warmup takes 30–60s. | Wait for container initialization and verify with `docker-compose ps`. |
+| `elasticsearch` health check fails | Elasticsearch JVM warmup takes 30–60s. | Wait for container initialization and verify with `docker compose ps`. |
 | Port already in use | Host port conflict on 9200, 5432, or 8501. | Stop conflicting host process or adjust host port mapping in `docker-compose.yml`. |
+| `Cannot connect to Ollama at http://...` | Ollama is not running or wrong URL. | Run `ollama serve` locally, or start Docker with `--profile ollama`. Check `OLLAMA_BASE_URL`. |
+| Ollama model not found (`404 model not found`) | Model has not been pulled yet. | Run `ollama pull llama3` locally, or `docker exec -it potbot-ollama ollama pull llama3` in Docker. |
 
 
 ---

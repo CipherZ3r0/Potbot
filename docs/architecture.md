@@ -10,7 +10,7 @@ potbot is a **Retrieval-Augmented Generation (RAG)** application for querying in
 
 1. **Ingests** documents (PDF, DOCX, TXT, MD, CSV) → splits them into chunks → generates vector embeddings → stores them in Elasticsearch.
 2. **Retrieves** the most relevant chunks when a user asks a question (using vector search, text search, or a hybrid of both).
-3. **Generates** a natural-language answer by sending the retrieved context + the user's question to an LLM (Groq API).
+3. **Generates** a natural-language answer by sending the retrieved context + the user's question to an LLM (Groq cloud API **or** a local Ollama instance).
 4. **Tracks** every conversation and user feedback in PostgreSQL for monitoring and evaluation.
 
 ---
@@ -20,7 +20,7 @@ potbot is a **Retrieval-Augmented Generation (RAG)** application for querying in
 | Layer              | Technology                           | Why this choice                                                                 |
 |--------------------|--------------------------------------|---------------------------------------------------------------------------------|
 | **Web UI**         | Streamlit                            | Rapid prototyping, built-in widgets, hot-reload, chat input support             |
-| **LLM**           | Groq API                             | Ultra-fast inference on open-weight models, free tier available                  |
+| **LLM**           | Groq API (default) or Ollama (local) | Groq: ultra-fast cloud inference, free tier. Ollama: 100% offline, any open-weight model. Selected via `LLM_PROVIDER` env var. |
 | **Embeddings**     | sentence-transformers (`all-MiniLM-L6-v2`) | 100% local, no API key, 384-dim vectors, fast on CPU               |
 | **Re-ranking**     | CrossEncoder (`ms-marco-MiniLM-L-6-v2`) | Local cross-encoder for high-accuracy relevance scoring             |
 | **Vector Store**   | Elasticsearch 8.x                    | Supports both dense vector kNN and sparse BM25 in one engine and enables hybrid search |
@@ -115,7 +115,7 @@ llm-zoomcamp-project/
 │   ├── retrievers.py             # Search strategies (vector, text, hybrid + RRF)
 │   ├── rerankers.py              # Cross-encoder re-ranking
 │   ├── prompt_builders.py        # Prompt template construction
-│   ├── llm_providers.py          # Groq LLM API client
+│   ├── llm_providers.py          # BaseLLMProvider, GroqLLMProvider, OllamaLLMProvider, create_llm_provider()
 │   └── pipeline.py               # Orchestrator: Rewrite → Retrieve → Rerank → Generate
 │
 ├── evaluation/                   # Offline evaluation scripts
@@ -156,7 +156,7 @@ Used extensively to make components swappable without changing calling code.
 | `BaseReranker`        | `CrossEncoderReranker`, `NoOpReranker`                     | Optional re-ranking             |
 | `BaseQueryRewriter`   | `LLMQueryRewriter`, `NoOpQueryRewriter`                    | Optional query expansion        |
 | `BasePromptBuilder`   | `TemplatePromptBuilder`                                    | Prompt style templates          |
-| `BaseLLMProvider`     | `GroqLLMProvider`                                          | LLM API abstraction             |
+| `BaseLLMProvider`     | `GroqLLMProvider`, `OllamaLLMProvider`                     | LLM API abstraction (provider-agnostic) |
 | `BaseDatabaseRepository` | `PostgresDatabaseRepository`                            | Persistence abstraction         |
 
 ### 5.2 Composite Pattern
@@ -164,7 +164,8 @@ Used extensively to make components swappable without changing calling code.
 - `CompositeChunker` — routes Markdown files to `MarkdownHeaderChunker`, everything else to `RecursiveCharacterChunker`.
 
 ### 5.3 Factory Pattern
-- `SearchStrategyFactory.get_strategy("hybrid")` — instantiates the correct strategy by name.
+- `SearchStrategyFactory.get_strategy("hybrid")` — instantiates the correct search strategy by name.
+- `create_llm_provider()` — reads `LLM_PROVIDER` from config and instantiates the correct `BaseLLMProvider` (`GroqLLMProvider` or `OllamaLLMProvider`). Adding a third provider requires only one dict entry and one new class.
 
 ### 5.4 Repository Pattern
 - `PostgresDatabaseRepository` — abstracts all database operations behind a clean interface (`save_conversation`, `save_feedback`, `get_recent_conversations`).
@@ -261,7 +262,7 @@ User types: "What is the vacation rollover limit?"
    │  1. Query Rewriting      │
    │     (LLMQueryRewriter)   │
    │                          │
-   │  Calls Groq API:         │
+   │  Calls LLM provider:     │
    │  "Rewrite this query     │
    │   for better retrieval"  │
    │                          │
@@ -333,10 +334,12 @@ User types: "What is the vacation rollover limit?"
               ▼
    ┌──────────────────────────┐
    │  5. LLM Generation        │
-   │     (GroqLLMProvider)     │
+   │     (BaseLLMProvider)     │
    │                           │
-   │  API call to Groq cloud:  │
-   │  Model: llama-3.3-70b     │
+   │  Groq cloud call OR       │
+   │  Ollama local HTTP call:  │
+   │  Model: llama-3.3-70b /   │
+   │         llama3 / etc.     │
    │  Temperature: 0.1         │
    │  Max tokens: 1024         │
    │                           │
@@ -432,11 +435,19 @@ All domain objects are **plain Python dataclasses** in `domain/models.py` with n
 
 ## 10. External Services & Their Roles
 
-### Groq API (cloud — requires internet + API key)
-- **Used for**: LLM text generation and query rewriting
+### Groq API (cloud — requires internet + API key, default provider)
+- **Used for**: LLM text generation and query rewriting when `LLM_PROVIDER=groq`
 - **Model**: `llama-3.3-70b-versatile` (open-weight, hosted by Groq for fast inference)
 - **Rate limits**: Free tier ~30 requests/min; paid tier much higher
 - **Data privacy**: Your document content is sent to Groq as part of the prompt context
+
+### Ollama (local — no API key, no internet needed, optional provider)
+- **Used for**: LLM text generation and query rewriting when `LLM_PROVIDER=ollama`
+- **Endpoint**: `POST /v1/chat/completions` (OpenAI-compatible interface, Ollama ≥ v0.1.24)
+- **Models**: Any model pulled via `ollama pull <name>` (llama3, mistral, gemma2, phi3, …)
+- **Data privacy**: 100% local — no data leaves your machine
+- **Docker**: Start with `docker compose --profile ollama up`; pull models with `docker exec -it potbot-ollama ollama pull llama3`
+- **Other runtimes**: LM Studio, vLLM, LocalAI — point `OLLAMA_BASE_URL` at them and set `LLM_PROVIDER=ollama`
 
 ### Hugging Face Hub (one-time download only)
 - **Used for**: Downloading embedding and re-ranking model weights

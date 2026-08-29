@@ -45,6 +45,11 @@ services:
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_USERS_ALLOW_SIGN_UP=false
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=potbot
+      - POSTGRES_USER=potbot
+      - POSTGRES_PASSWORD=potbot_secret
     volumes:
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
@@ -62,8 +67,16 @@ services:
     ports:
       - "8501:8501"
     environment:
+      # --- Provider selection ---
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
+      # --- Groq (default) ---
       - GROQ_API_KEY=${GROQ_API_KEY}
       - LLM_MODEL=${LLM_MODEL:-llama-3.3-70b-versatile}
+      # --- Ollama (only used when LLM_PROVIDER=ollama) ---
+      # Points to the companion ollama service (active with --profile ollama)
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3}
+      # --- Other services ---
       - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
       - ELASTICSEARCH_HOST=http://elasticsearch:9200
       - ELASTICSEARCH_INDEX=potbot_documents
@@ -80,7 +93,40 @@ services:
       postgres:
         condition: service_healthy
 
+  # ---------------------------------------------------------------------------
+  # Optional: Local Ollama service
+  # ---------------------------------------------------------------------------
+  # Activate with:  docker compose --profile ollama up
+  # Then set:       LLM_PROVIDER=ollama  in your .env (or export it)
+  #
+  # The service exposes port 11434 on the host so you can also use the
+  # running container from outside Docker (e.g. during local development).
+  # ---------------------------------------------------------------------------
+  ollama:
+    image: ollama/ollama:latest
+    container_name: potbot-ollama
+    profiles:
+      - ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Uncomment the lines below to enable GPU passthrough (requires nvidia-container-toolkit)
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: all
+    #           capabilities: [gpu]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:11434/api/tags || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
 volumes:
   es_data:
   pg_data:
   grafana_data:
+  ollama_data:

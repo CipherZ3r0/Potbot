@@ -3,7 +3,7 @@
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12-blue.svg)](https://python.org)
 [![Docker](https://img.shields.io/badge/Docker-Supported-blue.svg)](https://docker.com)
 
-**Potbot** is an end-to-end, enterprise-grade Retrieval-Augmented Generation (RAG) system designed for organizations to instantly turn internal document folders into a searchable, private knowledge base. All vector embeddings are generated locally on-device — ensuring zero data leakage — while fast response generation is powered by Groq's LLM engine.
+**Potbot** is an end-to-end, enterprise-grade Retrieval-Augmented Generation (RAG) system designed for organizations to instantly turn internal document folders into a searchable, private knowledge base. All vector embeddings are generated locally on-device — ensuring zero data leakage — while response generation can be powered by **Groq's cloud LLM API** (default) *or* a **fully local Ollama instance** for 100% offline, air-gapped deployments.
 
 ---
 
@@ -11,6 +11,7 @@
 - [Problem Description](#-problem-description)
 - [Architecture & Design Patterns](#-architecture--design-patterns)
 - [Key Features & Bonus Points](#-key-features--bonus-points)
+- [LLM Providers](#-llm-providers)
 - [Evaluation & Benchmarks](#-evaluation--benchmarks)
   - [Retrieval Evaluation](#1-retrieval-evaluation)
   - [LLM Evaluation](#2-llm-evaluation)
@@ -56,7 +57,7 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 │   2. HybridSearch       ──>  BM25 Keyword + Vector kNN Search (RRF Fusion)       │
 │   3. CrossEncoderRerank ──>  Re-scores retrieved chunks by relevance             │
 │   4. TemplatePrompt     ──>  Constructs grounded LLM prompt with sources        │
-│   5. GroqLLMProvider    ──>  Generates accurate streaming answer               │
+│   5. LLMProvider        ──>  Generates answer via Groq (cloud) or Ollama (local)│
 │   6. PostgresRepo       ──>  Persists query telemetry & user feedback           │
 └────────┬───────────────────────────────────────┬────────────────────────────────┘
          │                                       │
@@ -91,11 +92,38 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 - ⚡ **Hybrid Search**: Combines dense vector kNN similarity search with sparse BM25 text search via Reciprocal Rank Fusion (RRF).
 - 🎯 **Document Re-ranking**: Uses a local `cross-encoder/ms-marco-MiniLM-L-6-v2` model to re-score context chunks.
 - ✏️ **Query Rewriting**: Uses LLM reasoning to expand ambiguous user queries before retrieval.
+- 🤖 **Pluggable LLM Providers**: Switch between **Groq** (cloud, default) and **Ollama** (local/offline) by changing one env var (`LLM_PROVIDER`). Any OpenAI-compatible runtime (LM Studio, vLLM, LocalAI) can be wired in the same way.
 - 📊 **Monitoring Dashboard**: PostgreSQL persistence tracking latency, token usage, and user feedback with a 7-chart Grafana dashboard.
 - 🚀 **High-Performance Ingestion**: Generator-based streaming architecture with ThreadPool/ProcessPool parallelism.
 - 🔄 **Incremental Ingestion**: Uses `sha256` hashing and a SQLite checkpoint database to seamlessly skip unchanged files on subsequent runs.
 - 🧠 **LRU Embedding Cache**: Local SQLite-backed embedding cache bypasses expensive ML inference for identical text chunks across files.
 - 💻 **Hardware Acceleration**: Automatic pluggable backend routing (`CUDA` → `Apple MPS` → `CPU`) with support for PyTorch and ONNX models.
+
+---
+
+## 🤖 LLM Providers
+
+Potbot supports multiple LLM backends, selectable with the `LLM_PROVIDER` environment variable — **no code changes required**.
+
+| Provider | `LLM_PROVIDER` | Key variables | Best for |
+|---|---|---|---|
+| **Groq** (default) | `groq` | `GROQ_API_KEY`, `LLM_MODEL` | Fast cloud inference, free tier |
+| **Ollama** | `ollama` | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | 100% local / offline / air-gapped |
+
+> **Tip**: Any OpenAI-compatible runtime (LM Studio, vLLM, LocalAI …) works as an Ollama drop-in — just point `OLLAMA_BASE_URL` at it.
+
+### Quick switch
+
+```env
+# Groq (default — existing users need no changes)
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+
+# Ollama (local)
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+```
 
 ---
 
@@ -144,7 +172,8 @@ Potbot automatically logs every interaction into PostgreSQL, which feeds a real-
 
 ### Prerequisites
 - Docker & Docker Compose
-- Groq API Key ([Get a free key here](https://console.groq.com/))
+- **Groq** path: Groq API Key ([Get a free key here](https://console.groq.com/))
+- **Ollama** path: [Ollama](https://ollama.com/) installed and running (no API key needed)
 
 ### Step 1: Clone & Configure Environment
 ```bash
@@ -154,9 +183,25 @@ cd Potbot
 # Create .env file from template
 cp .env.example .env
 ```
-Edit `.env` and insert your `GROQ_API_KEY`:
+
+#### Option A — Groq (cloud, default)
+Edit `.env` and insert your key:
 ```env
+LLM_PROVIDER=groq
 GROQ_API_KEY=gsk_your_actual_groq_api_key_here
+```
+
+#### Option B — Ollama (local / offline)
+Edit `.env` to select Ollama:
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434   # local
+# or http://ollama:11434                 # if using Docker profile below
+OLLAMA_MODEL=llama3
+```
+Then pull the model once:
+```bash
+ollama pull llama3
 ```
 
 ### Step 2: Generate Sample Test Documents (optional)
@@ -166,18 +211,32 @@ python scripts/generate_sample_documents.py
 This creates synthetic corporate policy files in `data/sample_documents/` for instant testing.
 
 ### Step 3: Launch Stack via Docker Compose
+
+#### Option A — Groq (default, unchanged)
 ```bash
-docker-compose up --build -d
+docker compose up --build -d
+```
+
+#### Option B — With local Ollama container
+```bash
+# Starts all services PLUS the Ollama container
+LLM_PROVIDER=ollama docker compose --profile ollama up --build -d
+
+# Pull a model into the running Ollama container (first time only)
+docker exec -it potbot-ollama ollama pull llama3
 ```
 
 Access services:
-- **Streamlit Web Application**: `http://localhost:8501`
-- **Grafana Monitoring Dashboard**: `http://localhost:3000` (User: `admin`, Password: `admin`)
-- **Elasticsearch Cluster**: `http://localhost:9200`
+| Service | URL | Credentials |
+|---|---|---|
+| Potbot app | http://localhost:8501 | — |
+| Grafana dashboard | http://localhost:3000 | `admin` / `admin` |
+| Elasticsearch | http://localhost:9200 | — |
+| Ollama API *(profile only)* | http://localhost:11434 | — |
 
 ### Step 4: Run Unit Tests (optional)
 ```bash
-python -m unittest discover tests
+pytest tests/ -v
 ```
 
 ---
@@ -212,7 +271,7 @@ llm-zoomcamp-project/
 │   ├── retrievers.py             # Search strategies (vector, text, hybrid + RRF)
 │   ├── rerankers.py              # Cross-encoder re-ranking
 │   ├── prompt_builders.py        # Prompt template construction
-│   ├── llm_providers.py          # Groq LLM API client
+│   ├── llm_providers.py          # BaseLLMProvider, GroqLLMProvider, OllamaLLMProvider, create_llm_provider()
 │   └── pipeline.py               # Orchestrator: Rewrite → Retrieve → Rerank → Generate
 │
 ├── evaluation/                   # Offline evaluation scripts

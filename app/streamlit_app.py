@@ -401,12 +401,7 @@ if "pending_prompt" not in st.session_state:
 
 # --- Sidebar ---
 with st.sidebar:
-    st.markdown("""
-        <div style='margin-bottom: 24px;'>
-            <div style='font-size: 18px; font-weight: 600; color: #F5F5F5;'>potbot workspace</div>
-            <div style='font-size: 12px; color: #A1A1AA;'>Local environment</div>
-        </div>
-    """, unsafe_allow_html=True)
+    header_placeholder = st.empty()
 
     # Document Ingestion Section
     st.markdown("<div style='font-size: 11px; font-weight: 600; color: #A1A1AA; margin-bottom: 8px; text-transform: uppercase;'>Knowledge Base</div>", unsafe_allow_html=True)
@@ -536,9 +531,42 @@ with st.sidebar:
 
     st.write("") # Spacer
 
-    # Pipeline Settings
-    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #A1A1AA; margin-bottom: 8px; margin-top: 16px; text-transform: uppercase;'>Settings</div>", unsafe_allow_html=True)
-    retrieval_method = st.selectbox("Search Strategy", ["hybrid", "vector", "text"], index=0)
+    # --- SETTINGS SECTION ---
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #A1A1AA; margin-bottom: 8px; margin-top: 16px; text-transform: uppercase;'>Provider & Model</div>", unsafe_allow_html=True)
+    
+    default_provider_index = 0 if config.LLM_PROVIDER.lower() == "groq" else 1
+    ui_provider = st.selectbox("LLM Provider", ["Groq (Cloud)", "Ollama (Local)"], index=default_provider_index, label_visibility="collapsed")
+    selected_provider_key = "groq" if "Groq" in ui_provider else "ollama"
+    
+    if selected_provider_key == "groq":
+        groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant", "mixtral-8x7b-32768", "gemma2-9b-it", "Custom..."]
+        is_custom = config.LLM_MODEL not in [m for m in groq_models if m != "Custom..."]
+        
+        default_idx = groq_models.index("Custom...") if is_custom else groq_models.index(config.LLM_MODEL)
+        selected_option = st.selectbox("Model", groq_models, index=default_idx)
+        
+        if selected_option == "Custom...":
+            ui_model = st.text_input("Enter model name", value=config.LLM_MODEL if is_custom else "").strip()
+        else:
+            ui_model = selected_option
+    else:
+        ollama_models = ["llama3", "mistral", "gemma2", "phi3", "Custom..."]
+        is_custom = config.OLLAMA_MODEL not in [m for m in ollama_models if m != "Custom..."]
+        
+        if is_custom and config.OLLAMA_MODEL:
+            default_idx = ollama_models.index("Custom...")
+        else:
+            default_idx = ollama_models.index(config.OLLAMA_MODEL) if config.OLLAMA_MODEL in ollama_models else 0
+            
+        selected_option = st.selectbox("Model", ollama_models, index=default_idx)
+        
+        if selected_option == "Custom...":
+            ui_model = st.text_input("Enter model name", value=config.OLLAMA_MODEL if is_custom else "").strip()
+        else:
+            ui_model = selected_option
+        
+    st.markdown("<div style='font-size: 11px; font-weight: 600; color: #A1A1AA; margin-bottom: 8px; margin-top: 16px; text-transform: uppercase;'>Search Strategy</div>", unsafe_allow_html=True)
+    retrieval_method = st.selectbox("Search Strategy", ["hybrid", "vector", "text"], index=0, label_visibility="collapsed")
     
     c1, c2 = st.columns(2)
     with c1:
@@ -547,6 +575,15 @@ with st.sidebar:
         use_query_rewrite = st.checkbox("Rewrite", value=True)
         
     prompt_style = st.selectbox("Output Style", ["detailed", "concise", "structured"], index=0)
+
+    # Render dynamic header
+    provider_color = "#10B981" if selected_provider_key == "ollama" else "#3B82F6"
+    header_placeholder.markdown(f"""
+        <div style='margin-bottom: 24px;'>
+            <div style='font-size: 18px; font-weight: 600; color: #F5F5F5;'>potbot workspace</div>
+            <div style='font-size: 12px; color: #A1A1AA;'>Provider: <span style='color: {provider_color}; font-weight: 600;'>{selected_provider_key.upper()}</span></div>
+        </div>
+    """, unsafe_allow_html=True)
 
 
 # --- Main Header ---
@@ -591,17 +628,40 @@ else:
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
-            if msg["role"] == "assistant" and msg.get("sources"):
-                with st.expander("Sources", expanded=False):
-                    for src in msg["sources"]:
-                        st.markdown(
-                            f'<div class="source-card">'
-                            f'<span class="file-name">{src["file_name"]}</span>'
-                            f'{"Page " + str(src["page_number"]) + " • " if src.get("page_number") else ""}'
-                            f'{src["text"][:200]}...'
-                            f"</div>",
-                            unsafe_allow_html=True,
-                        )
+            
+            if msg["role"] == "assistant":
+                if msg.get("response_time_ms"):
+                    st.markdown(
+                        f"<div style='font-size: 12px; color: #A1A1AA; margin-top: 8px;'>"
+                        f"Generated in {msg['response_time_ms']}ms • {msg['total_tokens']} tokens"
+                        f"</div>",
+                        unsafe_allow_html=True
+                    )
+                
+                if msg.get("sources"):
+                    with st.expander("Sources", expanded=False):
+                        for src in msg["sources"]:
+                            st.markdown(
+                                f'<div class="source-card">'
+                                f'<span class="file-name">{src["file_name"]}</span>'
+                                f'{"Page " + str(src["page_number"]) + " • " if src.get("page_number") else ""}'
+                                f'{src["text"][:200]}...'
+                                f"</div>",
+                                unsafe_allow_html=True,
+                            )
+                
+                if msg.get("conversation_id"):
+                    conv_id = msg["conversation_id"]
+                    st.markdown("<div class='feedback-marker'></div>", unsafe_allow_html=True)
+                    c1, c2, _ = st.columns([1, 1, 10])
+                    with c1:
+                        if st.button("👍", key=f"up_hist_{conv_id}"):
+                            db_repo.save_feedback(FeedbackRecord(conversation_id=conv_id, sentiment="positive"))
+                            st.toast("Feedback recorded: 👍")
+                    with c2:
+                        if st.button("👎", key=f"down_hist_{conv_id}"):
+                            db_repo.save_feedback(FeedbackRecord(conversation_id=conv_id, sentiment="negative"))
+                            st.toast("Feedback recorded: 👎")
 
 
 # --- Chat Input & Execution ---
@@ -629,6 +689,8 @@ if active_prompt:
                     use_reranking=use_reranking,
                     use_query_rewriting=use_query_rewrite,
                     prompt_style=prompt_style,
+                    llm_provider_name=selected_provider_key,
+                    llm_model=ui_model,
                 )
 
                 st.markdown(response.answer)
@@ -659,28 +721,9 @@ if active_prompt:
                     "content": response.answer,
                     "sources": sources,
                     "conversation_id": response.conversation_id,
+                    "response_time_ms": response.response_time_ms,
+                    "total_tokens": response.total_tokens
                 })
-
-                st.markdown(
-                    f"<div style='font-size: 12px; color: #A1A1AA; margin-top: 8px;'>"
-                    f"Generated in {response.response_time_ms}ms • {response.total_tokens} tokens"
-                    f"</div>",
-                    unsafe_allow_html=True
-                )
-
-                # Feedback widget
-                if response.conversation_id:
-                    conv_id = response.conversation_id
-                    st.markdown("<div class='feedback-marker'></div>", unsafe_allow_html=True)
-                    c1, c2, _ = st.columns([1, 1, 10])
-                    with c1:
-                        if st.button("👍", key=f"up_{conv_id}"):
-                            db_repo.save_feedback(FeedbackRecord(conversation_id=conv_id, sentiment="positive"))
-                            st.toast("Feedback recorded: 👍")
-                    with c2:
-                        if st.button("👎", key=f"down_{conv_id}"):
-                            db_repo.save_feedback(FeedbackRecord(conversation_id=conv_id, sentiment="negative"))
-                            st.toast("Feedback recorded: 👎")
 
             except Exception as e:
                 err_text = f"Error: {str(e)}"

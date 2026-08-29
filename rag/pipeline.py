@@ -11,7 +11,7 @@ from rag.retrievers import BaseSearchStrategy, HybridSearchStrategy, SearchStrat
 from rag.rerankers import BaseReranker, CrossEncoderReranker, NoOpReranker
 from rag.query_rewriters import BaseQueryRewriter, LLMQueryRewriter, NoOpQueryRewriter
 from rag.prompt_builders import BasePromptBuilder, TemplatePromptBuilder
-from rag.llm_providers import BaseLLMProvider, GroqLLMProvider
+from rag.llm_providers import BaseLLMProvider, GroqLLMProvider, create_llm_provider
 from app.database import BaseDatabaseRepository, PostgresDatabaseRepository
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,7 @@ class RAGPipeline:
         self.reranker = reranker or CrossEncoderReranker()
         self.query_rewriter = query_rewriter or LLMQueryRewriter()
         self.prompt_builder = prompt_builder or TemplatePromptBuilder()
-        self.llm_provider = llm_provider or GroqLLMProvider()
+        self.llm_provider = llm_provider or create_llm_provider()
         self.repository = repository or PostgresDatabaseRepository()
 
     def query(
@@ -43,6 +43,8 @@ class RAGPipeline:
         use_reranking: bool = True,
         use_query_rewriting: bool = True,
         prompt_style: str = "detailed",
+        llm_provider_name: str = None,
+        llm_model: str = None,
         top_k: int = 5,
         rerank_top_n: int = 3,
         save_to_db: bool = True,
@@ -55,8 +57,15 @@ class RAGPipeline:
         else:
             strategy = self.search_strategy
 
+        # Get the active LLM provider for this query
+        active_llm_provider = create_llm_provider(llm_provider_name) if llm_provider_name else self.llm_provider
+
         # 2. Query Rewriting (optional)
-        rewriter = self.query_rewriter if use_query_rewriting else NoOpQueryRewriter()
+        if use_query_rewriting:
+            rewriter = LLMQueryRewriter(llm_provider=active_llm_provider, model=llm_model)
+        else:
+            rewriter = NoOpQueryRewriter()
+        
         search_q = rewriter.rewrite(user_query)
 
         # 3. Retrieval
@@ -71,7 +80,7 @@ class RAGPipeline:
         messages = self.prompt_builder.build_prompt(user_query, final_results, style=prompt_style)
 
         # 6. LLM Generation
-        gen_result = self.llm_provider.generate(messages)
+        gen_result = active_llm_provider.generate(messages, model=llm_model)
 
         # 7. Assemble RAGResponse domain object
         rag_response = RAGResponse(

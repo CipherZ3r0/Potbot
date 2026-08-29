@@ -4,13 +4,10 @@ Query Rewriter Services — Abstract interface & LLM implementation.
 
 from abc import ABC, abstractmethod
 import logging
-
-try:
-    from groq import Groq
-except (ImportError, AttributeError, OSError, Exception):
-    Groq = None
+from typing import Optional
 
 import config
+from rag.llm_providers import BaseLLMProvider, create_llm_provider
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,13 @@ class NoOpQueryRewriter(BaseQueryRewriter):
 
 
 class LLMQueryRewriter(BaseQueryRewriter):
-    """Query rewriter using LLM for query expansion."""
+    """Query rewriter that uses any BaseLLMProvider for query expansion.
+
+    The provider is injected at construction time, so it can be swapped or
+    mocked in tests without changing this class.  When no provider is
+    supplied, the configured default provider is used (Groq or Ollama,
+    depending on ``LLM_PROVIDER``).
+    """
 
     SYSTEM_PROMPT = (
         "You are a search query optimizer. Your job is to rewrite the user's question into a "
@@ -44,23 +47,30 @@ class LLMQueryRewriter(BaseQueryRewriter):
         "4. If the query is already specific, return it as-is"
     )
 
-    def __init__(self, api_key: str = None, model: str = None):
-        self.api_key = api_key or config.GROQ_API_KEY
-        self.model = model or config.LLM_MODEL
+    def __init__(self, llm_provider: Optional[BaseLLMProvider] = None, model: str = None):
+        # Lazily create the provider so that importing this module never
+        # performs network I/O or credential validation.
+        self._provider = llm_provider
+        self._model = model  # provider-level override (optional)
+
+    @property
+    def provider(self) -> BaseLLMProvider:
+        if self._provider is None:
+            self._provider = create_llm_provider()
+        return self._provider
 
     def rewrite(self, query: str) -> str:
         try:
-            client = Groq(api_key=self.api_key)
-            response = client.chat.completions.create(
-                model=self.model,
+            result = self.provider.generate(
                 messages=[
                     {"role": "system", "content": self.SYSTEM_PROMPT},
                     {"role": "user", "content": query},
                 ],
+                model=self._model,   # None → provider uses its own default
                 temperature=0.0,
                 max_tokens=150,
             )
-            rewritten = response.choices[0].message.content.strip()
+            rewritten = result["answer"]
             if rewritten:
                 logger.info(f"Query rewritten: '{query}' → '{rewritten}'")
                 return rewritten
