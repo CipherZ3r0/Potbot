@@ -4,6 +4,11 @@ potbot - Centralized configuration.
 Loads settings from environment variables (.env file) with sensible defaults.
 All ingestion tuning knobs are prefixed with INGESTION_ and can be set per
 environment (laptop vs. server) without changing any source code.
+
+LLM Provider selection
+----------------------
+Set  LLM_PROVIDER=groq   (default) to use the Groq cloud API.
+Set  LLM_PROVIDER=ollama          to use a local Ollama instance.
 """
 
 import os
@@ -12,9 +17,19 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+# --- LLM Provider Selection ---
+# "groq" (default) or "ollama"
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "groq").lower()
+
 # --- Groq LLM ---
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
-LLM_MODEL = os.getenv("LLM_MODEL", "llama-3.3-70b-versatile")
+LLM_MODEL = os.getenv("LLM_MODEL", "qwen/qwen3.8-27b")
+
+# --- Ollama (local / offline LLM) ---
+# When running locally:  http://localhost:11434
+# When running in Docker Compose with the ollama profile: http://ollama:11434
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3")
 
 # --- Embeddings (local, sentence-transformers) ---
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
