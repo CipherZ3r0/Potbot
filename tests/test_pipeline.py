@@ -195,6 +195,120 @@ class TestpotbotPipeline(unittest.TestCase):
             os.remove(temp_path)
 
 
+class TestRRFWeights(unittest.TestCase):
+
+    def test_config_defaults_are_05_05_and_k60(self):
+        self.assertEqual(config.VECTOR_RRF_WEIGHT, 0.5)
+        self.assertEqual(config.TEXT_RRF_WEIGHT, 0.5)
+        self.assertEqual(config.RRF_K, 60)
+
+        v_from_env = float(os.getenv("VECTOR_RRF_WEIGHT", "0.5"))
+        t_from_env = float(os.getenv("TEXT_RRF_WEIGHT", "0.5"))
+        k_from_env = int(os.getenv("RRF_K", "60"))
+        self.assertEqual(config.VECTOR_RRF_WEIGHT, v_from_env)
+        self.assertEqual(config.TEXT_RRF_WEIGHT, t_from_env)
+        self.assertEqual(config.RRF_K, k_from_env)
+
+    def test_config_weights_are_positive_floats(self):
+        self.assertIsInstance(config.VECTOR_RRF_WEIGHT, float)
+        self.assertIsInstance(config.TEXT_RRF_WEIGHT, float)
+        self.assertGreater(config.VECTOR_RRF_WEIGHT, 0.0)
+        self.assertGreater(config.TEXT_RRF_WEIGHT, 0.0)
+
+    def test_hybrid_strategy_uses_configured_weights(self):
+        from rag.retrievers import HybridSearchStrategy
+
+        with patch.object(config, "VECTOR_RRF_WEIGHT", 0.4), \
+             patch.object(config, "TEXT_RRF_WEIGHT", 0.6), \
+             patch.object(config, "RRF_K", 42):
+            strategy = HybridSearchStrategy()
+
+        self.assertEqual(strategy.vector_weight, 0.4)
+        self.assertEqual(strategy.text_weight, 0.6)
+        self.assertEqual(strategy.rrf_k, 42)
+
+    def test_explicit_weights_override_config(self):
+        from rag.retrievers import HybridSearchStrategy
+
+        with patch.object(config, "VECTOR_RRF_WEIGHT", 0.4), \
+             patch.object(config, "TEXT_RRF_WEIGHT", 0.6):
+            strategy = HybridSearchStrategy(vector_weight=0.7, text_weight=0.3, rrf_k=60)
+
+        self.assertEqual(strategy.vector_weight, 0.7)
+        self.assertEqual(strategy.text_weight, 0.3)
+        self.assertEqual(strategy.rrf_k, 60)
+
+    def test_factory_hybrid_uses_configured_weights(self):
+        from rag.retrievers import SearchStrategyFactory
+
+        with patch.object(config, "VECTOR_RRF_WEIGHT", 0.3), \
+             patch.object(config, "TEXT_RRF_WEIGHT", 0.7):
+            strategy = SearchStrategyFactory.get_strategy("hybrid")
+
+        self.assertEqual(strategy.vector_weight, 0.3)
+        self.assertEqual(strategy.text_weight, 0.7)
+
+    def test_rrf_scoring_uses_configured_weights(self):
+        from rag.retrievers import HybridSearchStrategy
+
+        def res(chunk_id):
+            return SearchResult(
+                chunk_id=chunk_id, doc_id=chunk_id, text="t", file_name="f",
+                source_file="/f", file_type=".pdf",
+                page_number=1, score=1.0,
+            )
+
+        vector_mock = MagicMock()
+        vector_mock.search.return_value = [res("X"), res("Y")]
+        text_mock = MagicMock()
+        text_mock.search.return_value = [res("Y"), res("Z")]
+
+        strategy = HybridSearchStrategy(vector_weight=0.5, text_weight=0.5, rrf_k=60)
+        strategy.vector_strategy = vector_mock
+        strategy.text_strategy = text_mock
+
+        results = strategy.search("query", top_k=3)
+        by_id = {r.chunk_id: r for r in results}
+        order = [r.chunk_id for r in results]
+
+        # X: vector only, rank 0 -> 0.5/60
+        # Y: vector rank 0 (text rank 1) -> 0.5/60 + 0.5/61
+        # Z: text only, rank 1 -> 0.5/61
+        self.assertAlmostEqual(by_id["X"].rrf_score, 0.5 / 60, places=6)
+        self.assertAlmostEqual(by_id["Y"].rrf_score, 0.5 / 60 + 0.5 / 61, places=6)
+        self.assertAlmostEqual(by_id["Z"].rrf_score, 0.5 / 61, places=6)
+        self.assertEqual(order, ["Y", "X", "Z"])
+
+    def test_rrf_scoring_explicit_pair_affected_by_weight(self):
+        from rag.retrievers import HybridSearchStrategy
+
+        def res(chunk_id):
+            return SearchResult(
+                chunk_id=chunk_id, doc_id=chunk_id, text="t", file_name="f",
+                source_file="/f", file_type=".pdf",
+                page_number=1, score=1.0,
+            )
+
+        vector_mock = MagicMock()
+        vector_mock.search.return_value = [res("A"), res("B")]
+        text_mock = MagicMock()
+        text_mock.search.return_value = [res("B"), res("A")]
+
+        # With vector=0.9/text=0.1, A (vector rank 0) dominates.
+        strategy = HybridSearchStrategy(vector_weight=0.9, text_weight=0.1, rrf_k=60)
+        strategy.vector_strategy = vector_mock
+        strategy.text_strategy = text_mock
+        order = [r.chunk_id for r in strategy.search("query", top_k=2)]
+        self.assertEqual(order, ["A", "B"])
+
+        # With vector=0.1/text=0.9, B (text rank 0) dominates.
+        strategy = HybridSearchStrategy(vector_weight=0.1, text_weight=0.9, rrf_k=60)
+        strategy.vector_strategy = vector_mock
+        strategy.text_strategy = text_mock
+        order = [r.chunk_id for r in strategy.search("query", top_k=2)]
+        self.assertEqual(order, ["B", "A"])
+
+
 class TestRetrievalCandidatePool(unittest.TestCase):
 
     def test_config_default_is_20(self):
