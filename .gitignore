@@ -29,3 +29,7 @@ env/
 
 # Cache / db
 *.db
+
+# Node
+node_modules/
+dist/

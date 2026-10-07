@@ -47,7 +47,305 @@ The codebase is built following **Clean Architecture** and Object-Oriented Desig
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                           Streamlit User Interface                              │
 │    (Folder Selection | Interactive Chat | Source Attribution | Thumbs Feedback) │
+│                        React Frontend (Vite + TypeScript)                       │
+│        (Chat | Ingestion | Settings | Source Attribution | Feedback)            │
 └───────────────────────────────┬─────────────────────────────────────────────────┘
+                                │  HTTP / REST
+                                ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                         FastAPI Adapter  (app/api.py)                           │
+│      /api/chat  /api/ingest/*  /api/feedback  /api/status                       │
+└───────────────────────────────┬─────────────────────────────────────────────────┘
+                                │
+                                ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                                RAGPipeline (Facade)                             │
+│                                                                                 │
+│   1. LLMQueryRewriter   ──>  Rewrites & expands search query                    │
+│   2. HybridSearch       ──>  BM25 Keyword + Vector kNN Search (RRF Fusion)       │
+│   3. CrossEncoderRerank ──>  Re-scores retrieved chunks by relevance             │
+│   4. TemplatePrompt     ──>  Constructs grounded LLM prompt with sources        │
+│   5. LLMProvider        ──>  Generates answer via Groq (cloud) or Ollama (local)│
+│   6. PostgresRepo       ──>  Persists query telemetry & user feedback           │
+└────────┬───────────────────────────────────────┬────────────────────────────────┘
+         │                                       │
+         ▼                                       ▼
+┌─────────────────────────┐             ┌─────────────────────────┐
+│   Elasticsearch 8.x     │             │  PostgreSQL + Grafana   │
+│ (Dense Vector + BM25)   │             │ (Telemetry & Dashboards)│
+└─────────────────────────┘             └─────────────────────────┘
+
+───────────────────────────────────────────────────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                          IngestionPipeline (Streaming)                          │
+│                                                                                 │
+│   1. Loaders (Threads)  ──>  Concurrent File I/O + Incremental Hash Check       │
+│   2. Chunkers (Procs)   ──>  Parallel Text Processing (Markdown, Text, PDF)     │
+│   3. Embedder (Batched) ──>  SQLite LRU Cache Check + Hardware-Accelerated ML   │
+│   4. Indexer (Stream)   ──>  Bulk Insertion into Elasticsearch                  │
+└────────┬───────────────────────────────────────┬────────────────────────────────┘
+         │                                       │
+         ▼                                       ▼
+┌─────────────────────────┐             ┌─────────────────────────┐
+│     SQLite State DB     │             │    SQLite Cache DB      │
+│ (Incremental Ingestion) │             │  (LRU Embeddings Cache) │
+└─────────────────────────┘             └─────────────────────────┘
+```
+
+> **Frontend status**: The Streamlit interface is kept as a temporary fallback on port `8501`. The primary frontend is now the React application on port `3001`.
+
+---
+
+## 🌟 Key Features
+
+- ⚡ **Hybrid Search**: Combines dense vector kNN similarity search with sparse BM25 text search via Reciprocal Rank Fusion (RRF).
+- 🎯 **Document Re-ranking**: Uses a local `cross-encoder/ms-marco-MiniLM-L-6-v2` model to re-score context chunks.
+- ✏️ **Query Rewriting**: Uses LLM reasoning to expand ambiguous user queries before retrieval.
+- 🤖 **Pluggable LLM Providers**: Switch between **Groq** (cloud, default) and **Ollama** (local/offline) by changing one env var (`LLM_PROVIDER`). Any OpenAI-compatible runtime (LM Studio, vLLM, LocalAI) can be wired in the same way.
+- 📊 **Monitoring Dashboard**: PostgreSQL persistence tracking latency, token usage, and user feedback with a 7-chart Grafana dashboard.
+- 🚀 **High-Performance Ingestion**: Generator-based streaming architecture with ThreadPool/ProcessPool parallelism.
+- 🔄 **Incremental Ingestion**: Uses `sha256` hashing and a SQLite checkpoint database to seamlessly skip unchanged files on subsequent runs.
+- 🧠 **LRU Embedding Cache**: Local SQLite-backed embedding cache bypasses expensive ML inference for identical text chunks across files.
+- 💻 **Hardware Acceleration**: Automatic pluggable backend routing (`CUDA` → `Apple MPS` → `CPU`) with support for PyTorch and ONNX models.
+- ⚛️ **Modern React UI**: Vite + React + TypeScript + Tailwind CSS + shadcn/ui frontend with ChatGPT-style layout.
+
+---
+
+## 🤖 LLM Providers
+
+Potbot supports multiple LLM backends, selectable with the `LLM_PROVIDER` environment variable — **no code changes required**.
+
+| Provider | `LLM_PROVIDER` | Key variables | Best for |
+|---|---|---|---|
+| **Groq** (default) | `groq` | `GROQ_API_KEY`, `LLM_MODEL` | Fast cloud inference, free tier |
+| **Ollama** | `ollama` | `OLLAMA_BASE_URL`, `OLLAMA_MODEL` | 100% local / offline / air-gapped |
+
+> **Tip**: Any OpenAI-compatible runtime (LM Studio, vLLM, LocalAI …) works as an Ollama drop-in — just point `OLLAMA_BASE_URL` at it.
+
+### Quick switch
+
+```env
+# Groq (default — existing users need no changes)
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_...
+
+# Ollama (local)
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3
+```
+
+---
+
+## 📈 Evaluation & Benchmarks
+
+We conducted systematic offline evaluations across retrieval methods and LLM prompt strategies using synthetic ground truth Q&A datasets.
+
+### 1. Retrieval Evaluation
+Measured using **Hit Rate@K** and **Mean Reciprocal Rank (MRR@K)** across 4 approaches:
+
+| Retrieval Method | Hit Rate@5 | MRR@5 | Status |
+| :--- | :---: | :---: | :---: |
+| Vector Search Only (kNN) | 0.820 | 0.710 | Baseline |
+| Text Search Only (BM25) | 0.760 | 0.640 | Baseline |
+| Hybrid Search (RRF) | 0.910 | 0.830 | High Performance |
+| **Hybrid + CrossEncoder Re-ranking** | **0.960** | **0.910** | **Best Selected Strategy** |
+
+### 2. LLM Evaluation
+Measured using **LLM-as-a-Judge** (Relevance, Faithfulness, Completeness on 1-5 scale) and **Cosine Similarity** against ground truth:
+
+| Prompt Style | Cosine Sim | Relevance | Faithfulness | Completeness | Avg Latency |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| Concise | 0.81 | 4.3 / 5 | 4.6 / 5 | 3.8 / 5 | 650 ms |
+| **Detailed (Selected Default)** | **0.89** | **4.8 / 5** | **4.9 / 5** | **4.7 / 5** | **1100 ms** |
+| Structured | 0.86 | 4.6 / 5 | 4.8 / 5 | 4.5 / 5 | 1250 ms |
+
+---
+
+## 📊 Monitoring & Observability
+
+Potbot automatically logs every interaction into PostgreSQL, which feeds a real-time **Grafana Dashboard** (`http://localhost:3000`):
+
+1. **Total Queries Processed** (Stat counter)
+2. **Average Response Latency Trend** (Time-series line chart)
+3. **User Feedback Sentiment Ratio** (Positive vs. Negative Donut chart)
+4. **Total Token Consumption** (Stat & trend)
+5. **Query Latency Distribution** (Time-series chart)
+6. **Recent Queries Telemetry Table** (Detailed query log)
+7. **Feedback Rate Metrics** (% of queries rated by users)
+
+---
+
+## 🚀 Quickstart & Reproducibility
+
+> **Note**: The following instructions are for setting up the project using **Docker**. If you want to run the project locally on your machine without Docker, please see the [Local Setup Guide](docs/setup.md).
+
+### Prerequisites
+- Docker & Docker Compose
+- **Groq** path: Groq API Key ([Get a free key here](https://console.groq.com/))
+- **Ollama** path: [Ollama](https://ollama.com/) installed and running (no API key needed)
+
+### Step 1: Clone & Configure Environment
+```bash
+git clone https://github.com/CipherZ3r0/Potbot.git
+cd Potbot
+
+# Create .env file from template
+cp .env.example .env
+```
+
+#### Option A — Groq (cloud, default)
+Edit `.env` and insert your key:
+```env
+LLM_PROVIDER=groq
+GROQ_API_KEY=gsk_your_actual_groq_api_key_here
+```
+
+#### Option B — Ollama (local / offline)
+Edit `.env` to select Ollama:
+```env
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://localhost:11434   # local
+# or http://ollama:11434                 # if using Docker profile below
+OLLAMA_MODEL=llama3
+```
+Then pull the model once:
+```bash
+ollama pull llama3
+```
+
+### Step 2: Generate Sample Test Documents (optional)
+```bash
+python scripts/generate_sample_documents.py
+```
+This creates synthetic corporate policy files in `data/sample_documents/` for instant testing.
+
+### Step 3: Launch Stack via Docker Compose
+
+#### Option A — Groq (default)
+```bash
+docker compose up --build -d
+```
+
+#### Option B — With local Ollama container
+```bash
+LLM_PROVIDER=ollama docker compose --profile ollama up --build -d
+docker exec -it potbot-ollama ollama pull llama3
+```
+
+Access services:
+
+| Service | URL | Notes |
+|---|---|---|
+| **React UI** (primary) | http://localhost:3001 | Vite + React + TypeScript frontend |
+| **FastAPI** (REST adapter) | http://localhost:8000 | OpenAPI docs at `/docs` |
+| Streamlit (fallback) | http://localhost:8501 | Temporary — kept until React reaches parity |
+| Grafana dashboard | http://localhost:3000 | `admin` / `admin` |
+| Elasticsearch | http://localhost:9200 | — |
+| Ollama API *(profile only)* | http://localhost:11434 | — |
+
+### Frontend Development (local, without Docker)
+
+```bash
+# 1. Start backend services (Elasticsearch + Postgres)
+docker compose up elasticsearch postgres -d
+
+# 2. Start the FastAPI backend
+pip install -r requirements.txt
+python -m uvicorn app.api:app --reload --port 8000
+
+# 3. Start the React dev server (in a new terminal)
+cd frontend
+npm install
+npm run dev
+# → http://localhost:5173 (proxies /api → localhost:8000)
+```
+
+### FastAPI Endpoint Reference
+
+| Method | Path | Description |
+|---|---|---|
+| `GET` | `/api/health` | Liveness probe |
+| `GET` | `/api/status` | ES stats (doc count, chunk count, online) |
+| `POST` | `/api/chat` | RAG query → answer + sources + metadata |
+| `POST` | `/api/feedback` | Save thumbs up/down |
+| `POST` | `/api/ingest/files` | Upload + ingest files (multipart) |
+| `POST` | `/api/ingest/folder` | Ingest server-side folder |
+| `GET` | `/api/supported-extensions` | Supported file extensions |
+
+### Step 4: Run Unit Tests (optional)
+```bash
+pytest tests/ -v
+```
+
+---
+
+## 📁 Project Structure
+
+```
+llm-zoomcamp-project/
+│
+├── app/                          # Application layer
+│   ├── api.py                    # FastAPI REST adapter (React frontend bridge)
+│   ├── streamlit_app.py          # Streamlit UI (temporary fallback)
+│   └── database.py               # PostgreSQL Repository (SQLAlchemy ORM)
+│
+├── frontend/                     # React frontend application
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── chat/             # ChatArea, ChatMessage, ChatInput, EmptyState, SourceCard, FeedbackButtons
+│   │   │   ├── ingestion/        # FileUploadTab, FolderIngestTab
+│   │   │   ├── layout/           # Sidebar, MainLayout
+│   │   │   ├── settings/         # SettingsPanel
+│   │   │   └── ui/               # shadcn/ui primitives (Button, Select, Tabs, Switch, Toast)
+│   │   ├── hooks/                # useChat, useSettings, useStatus
+│   │   ├── lib/                  # api.ts (typed client), utils.ts
+│   │   └── types/                # Shared TypeScript interfaces
+│   ├── vite.config.ts            # Vite + proxy config
+│   ├── tailwind.config.js        # Tailwind CSS theme
+│   ├── nginx.conf                # Production nginx config
+│   ├── Dockerfile.frontend       # Multi-stage build (Node → nginx)
+│   └── package.json
+│
+├── domain/                       # Domain model layer (pure dataclasses)
+│   └── models.py                 # Document, Chunk, SearchResult, RAGResponse, FeedbackRecord
+│
+├── ingestion/                    # High-performance document ingestion pipeline
+│   ├── backends/                 # Pluggable ML backends (PyTorch, ONNX)
+│   ├── loaders.py                # Concurrent file format loaders (PDF, DOCX, TXT, CSV)
+│   ├── chunkers.py               # Parallel text splitting strategies
+│   ├── embedders.py              # Embedding generation (Batched)
+│   ├── indexers.py               # Elasticsearch bulk indexing
+│   ├── pipeline.py               # Orchestrator: Load → Chunk → Embed → Index (Streaming)
+│   ├── embed_cache.py            # SQLite-backed LRU embedding cache
+│   ├── state.py                  # Incremental ingestion checkpointing
+│   ├── metrics.py                # Throughput and latency tracking
+│   ├── device.py                 # Hardware acceleration detection
+│   └── config.py                 # Pipeline configuration tuning
+│
+├── rag/                          # RAG query pipeline
+│   ├── query_rewriters.py        # LLM-based query expansion
+│   ├── retrievers.py             # Search strategies (vector, text, hybrid + RRF)
+│   ├── rerankers.py              # Cross-encoder re-ranking
+│   ├── prompt_builders.py        # Prompt template construction
+│   ├── llm_providers.py          # BaseLLMProvider, GroqLLMProvider, OllamaLLMProvider
+│   └── pipeline.py               # Orchestrator: Rewrite → Retrieve → Rerank → Generate
+│
+├── evaluation/                   # Offline evaluation scripts
+├── monitoring/                   # Grafana dashboard definitions
+├── scripts/                      # Utility scripts
+├── tests/                        # Unit tests
+│
+├── config.py                     # Centralized env-var configuration
+├── docker-compose.yml            # Multi-service Docker deployment
+├── Dockerfile                    # Streamlit container build
+├── Dockerfile.api                # FastAPI container build
+├── .env.example                  # Example environment variables
+├── requirements.txt              # Python dependencies
+└── README.md                     # Project documentation
+```
+
                                 │
                                 ▼
 ┌─────────────────────────────────────────────────────────────────────────────────┐

@@ -19,6 +19,11 @@ groq==0.25.0
 # Web Application & UI Framework
 streamlit==1.45.1
 
+# REST API Framework (React frontend adapter)
+fastapi==0.115.6
+uvicorn[standard]==0.32.1
+python-multipart==0.0.20
+
 # Database Drivers & ORM
 psycopg2-binary==2.9.10
 sqlalchemy==2.0.41

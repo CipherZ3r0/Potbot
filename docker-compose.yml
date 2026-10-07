@@ -59,6 +59,48 @@ services:
         condition: service_healthy
 
   # --- potbot Application ---
+  # --- potbot REST API (React frontend adapter) ---
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    container_name: potbot-api
+    ports:
+      - "8000:8000"
+    environment:
+      - LLM_PROVIDER=${LLM_PROVIDER:-groq}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - LLM_MODEL=${LLM_MODEL:-llama-3.3-70b-versatile}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-llama3}
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - ELASTICSEARCH_HOST=http://elasticsearch:9200
+      - ELASTICSEARCH_INDEX=potbot_documents
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=potbot
+      - POSTGRES_USER=potbot
+      - POSTGRES_PASSWORD=potbot_secret
+    volumes:
+      - ./data:/app/data
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+
+  # --- potbot React Frontend ---
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.frontend
+    container_name: potbot-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
+  # --- potbot Streamlit (temporary fallback — kept until React reaches full parity) ---
   streamlit-app:
     build:
       context: .
