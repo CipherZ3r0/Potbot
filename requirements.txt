@@ -23,14 +23,7 @@ streamlit==1.45.1
 psycopg2-binary==2.9.10
 sqlalchemy==2.0.41
 
-# Ingestion Pipeline & Workflow Orchestration
-prefect==3.4.5
-
 # Evaluation & Benchmarking
 pandas==2.2.3
 numpy==2.2.6
-scikit-learn==1.6.1
-
-# Automated Testing
-pytest==8.4.0
 

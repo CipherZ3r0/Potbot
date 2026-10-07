@@ -9,6 +9,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# CPU-only PyTorch: avoids ~2.2 GB NVIDIA/CUDA wheels (container runs without GPU).
+# satisfies sentence-transformers' torch>=1.11 requirement (resolved in the layer below).
+RUN pip install --no-cache-dir --extra-index-url https://download.pytorch.org/whl/cpu torch==2.13.0+cpu
+
 # Copy and install python dependencies
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
