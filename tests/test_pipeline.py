@@ -2,8 +2,11 @@
 Unit Tests for potbot domain models, loaders, chunkers, prompt builders, and rerankers.
 """
 
+import os
 import unittest
+from unittest.mock import MagicMock, patch
 
+import config
 from domain.models import Document, Chunk, SearchResult
 from ingestion.loaders import TextDocumentLoader, PDFDocumentLoader, DocxDocumentLoader, CSVDocumentLoader
 from ingestion.chunkers import RecursiveCharacterChunker, MarkdownHeaderChunker, CompositeChunker
@@ -190,6 +193,201 @@ class TestpotbotPipeline(unittest.TestCase):
             self.assertTrue(all(c.file_type == ".py" for c in chunks))
         finally:
             os.remove(temp_path)
+
+
+class TestRetrievalCandidatePool(unittest.TestCase):
+
+    def test_config_default_is_20(self):
+        self.assertEqual(config.RETRIEVAL_CANDIDATE_POOL, 20)
+
+        pool_from_env = int(os.getenv("RETRIEVAL_CANDIDATE_POOL", "20"))
+        self.assertEqual(config.RETRIEVAL_CANDIDATE_POOL, pool_from_env)
+
+    def test_config_is_positive_int(self):
+        self.assertIsInstance(config.RETRIEVAL_CANDIDATE_POOL, int)
+        self.assertGreater(config.RETRIEVAL_CANDIDATE_POOL, 0)
+
+    def _build_pipeline(self, search_strategy, reranker):
+        from rag.pipeline import RAGPipeline
+        from rag.llm_providers import GroqLLMProvider
+
+        llm = MagicMock()
+        llm.generate.return_value = {
+            "answer": "ok",
+            "model": "m",
+            "response_time_ms": 1,
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2,
+        }
+        return RAGPipeline(
+            search_strategy=search_strategy,
+            reranker=reranker,
+            query_rewriter=mock_noop_rewriter(),
+            prompt_builder=MagicMock(),
+            llm_provider=llm,
+            repository=MagicMock(),
+        )
+
+    def test_reranking_fetches_candidate_pool_not_top_k(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        reranker = MagicMock()
+        reranker.rerank.return_value = []
+        pipeline = self._build_pipeline(strategy, reranker)
+
+        with patch.object(config, "RETRIEVAL_CANDIDATE_POOL", 20):
+            pipeline.query(
+                "test query",
+                use_reranking=True,
+                use_query_rewriting=False,
+                top_k=5,
+                rerank_top_n=3,
+                save_to_db=False,
+            )
+
+        strategy.search.assert_called_once()
+        call_kwargs = strategy.search.call_args[1]
+        self.assertEqual(call_kwargs["top_k"], 20)
+        reranker.rerank.assert_called_once()
+        self.assertEqual(reranker.rerank.call_args[1]["top_n"], 3)
+
+    def test_reranking_ignores_top_k_override(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        reranker = MagicMock()
+        reranker.rerank.return_value = []
+        pipeline = self._build_pipeline(strategy, reranker)
+
+        with patch.object(config, "RETRIEVAL_CANDIDATE_POOL", 20):
+            pipeline.query(
+                "test query",
+                use_reranking=True,
+                use_query_rewriting=False,
+                top_k=99,
+                rerank_top_n=3,
+                save_to_db=False,
+            )
+
+        call_kwargs = strategy.search.call_args[1]
+        self.assertEqual(call_kwargs["top_k"], 20)
+        self.assertEqual(reranker.rerank.call_args[1]["top_n"], 3)
+
+    def test_no_reranking_uses_top_k(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        reranker = MagicMock()
+        pipeline = self._build_pipeline(strategy, reranker)
+
+        with patch.object(config, "RETRIEVAL_CANDIDATE_POOL", 20):
+            pipeline.query(
+                "test query",
+                use_reranking=False,
+                use_query_rewriting=False,
+                top_k=7,
+                rerank_top_n=3,
+                save_to_db=False,
+            )
+
+        call_kwargs = strategy.search.call_args[1]
+        self.assertEqual(call_kwargs["top_k"], 7)
+
+    def test_pipeline_honours_configured_pool(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        reranker = MagicMock()
+        reranker.rerank.return_value = []
+        pipeline = self._build_pipeline(strategy, reranker)
+
+        with patch.object(config, "RETRIEVAL_CANDIDATE_POOL", 42):
+            pipeline.query(
+                "test query",
+                use_reranking=True,
+                use_query_rewriting=False,
+                top_k=5,
+                rerank_top_n=3,
+                save_to_db=False,
+            )
+
+        call_kwargs = strategy.search.call_args[1]
+        self.assertEqual(call_kwargs["top_k"], 42)
+
+
+class TestQueryRewritingDefault(unittest.TestCase):
+
+    def _build_pipeline(self, search_strategy, llm_provider, reranker=None):
+        from rag.pipeline import RAGPipeline
+
+        return RAGPipeline(
+            search_strategy=search_strategy,
+            reranker=reranker or MagicMock(),
+            query_rewriter=MagicMock(),
+            prompt_builder=MagicMock(),
+            llm_provider=llm_provider,
+            repository=MagicMock(),
+        )
+
+    @staticmethod
+    def _llm_provider(answer="ok"):
+        llm = MagicMock()
+        llm.generate.return_value = {
+            "answer": answer,
+            "model": "m",
+            "response_time_ms": 1,
+            "prompt_tokens": 1,
+            "completion_tokens": 1,
+            "total_tokens": 2,
+        }
+        return llm
+
+    def test_config_flag_defaults_to_false(self):
+        self.assertIs(config.USE_QUERY_REWRITING, False)
+
+    def test_pipeline_query_default_is_false(self):
+        import inspect
+        from rag.pipeline import RAGPipeline
+
+        param = inspect.signature(RAGPipeline.query).parameters["use_query_rewriting"]
+        self.assertIs(param.default, False)
+
+    def test_rewriting_disabled_by_default_uses_original_query(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        llm = self._llm_provider("rewritten-query")
+        pipeline = self._build_pipeline(strategy, llm)
+
+        response = pipeline.query("original query", save_to_db=False)
+
+        call_kwargs = strategy.search.call_args
+        self.assertEqual(call_kwargs[0][0], "original query")  # NOT rewritten
+        self.assertEqual(call_kwargs[1]["top_k"], config.RETRIEVAL_CANDIDATE_POOL)
+        self.assertIsNone(response.rewritten_query)
+
+    def test_explicit_opt_in_enables_rewriter(self):
+        strategy = MagicMock()
+        strategy.search.return_value = []
+        rewriter_llm = self._llm_provider("rewritten-query")
+        pipeline = self._build_pipeline(strategy, rewriter_llm)
+
+        response = pipeline.query(
+            "original query", use_query_rewriting=True, save_to_db=False
+        )
+
+        call_kwargs = strategy.search.call_args
+        self.assertEqual(call_kwargs[0][0], "rewritten-query")
+        self.assertEqual(response.rewritten_query, "rewritten-query")
+
+    def test_rewriter_implementation_still_importable(self):
+        from rag.query_rewriters import LLMQueryRewriter, NoOpQueryRewriter
+
+        self.assertTrue(callable(LLMQueryRewriter))
+        self.assertTrue(callable(NoOpQueryRewriter))
+
+
+def mock_noop_rewriter():
+    rewriter = MagicMock()
+    rewriter.rewrite.return_value = "test query"
+    return rewriter
 
 
 if __name__ == "__main__":
