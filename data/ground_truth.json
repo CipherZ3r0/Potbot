@@ -1,0 +1,349 @@
+[
+  {
+    "question": "What is a transaction in a database according to the DBMS notes?",
+    "expected_answer": "A unit of work done against the DB in a logical sequence, containing one or more SQL statements that are either fully completed or rolled back.",
+    "chunk_id": "859d5ed6b21b196d1a5b339f6b061410",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What does the Isolation property of ACID transactions guarantee?",
+    "expected_answer": "Each transaction is unaware of other concurrent transactions; for every pair of transactions, it appears each finished before the other started or vice versa, so transactions execute in isolation without interfering.",
+    "chunk_id": "f38401ee4d43ec0e6068fbff223096b2",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What is a weak entity in the ER model?",
+    "expected_answer": "A weak entity can't be uniquely identified on its own and depends on some other strong entity for existence; it lacks sufficient attributes to select a uniquely identifiable attribute (e.g. Payment is weak, Loan is strong).",
+    "chunk_id": "fb8f7daa3c1e09799ddb9a1f1423993e",
+    "category": "terminology",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What are the advantages of indexing in a database?",
+    "expected_answer": "Faster access and retrieval of data, and less I/O.",
+    "chunk_id": "7e0e9e88169422918b1513bdbfb14830",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "How do columnar databases store and read data compared with row-oriented relational databases?",
+    "expected_answer": "A column store is organised as a set of columns; rows of the same column are stored together, so analytics on a small number of columns can read only those columns directly, and columns of the same type compress better and aggregate faster (e.g. total yearly sales).",
+    "chunk_id": "d9ac950be271c9d722156428972a485d",
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What is database clustering and how is the dataset handled across servers?",
+    "expected_answer": "Database clustering combines more than one server or instance into a single database; the same dataset is replicated on different servers.",
+    "chunk_id": "412227020c046429a67811aba53f59f7",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "Which mechanism makes a database reach extremely high availability via load balancing and extra machines?",
+    "expected_answer": "Database clustering, which uses load balancing and extra machines so that if one server shuts down the data is still available.",
+    "chunk_id": "7c514d83def3f11cbeed0b8958fefe4b",
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What is the simplest type of NoSQL database?",
+    "expected_answer": "A key-value store: every data element is stored as a key-value pair, the key being an attribute name and the value being the data (e.g. 'state' -> 'Alaska').",
+    "chunk_id": [
+      "b5522059ec115115876d20b6ce5374ed",
+      "aa11dc95f07086be58e4fd913d12b8c9"
+    ],
+    "category": "terminology",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf",
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "How can you scale out a database by bringing on additional nodes to share the load?",
+    "expected_answer": "Horizontal scaling (also called scale-out) brings on additional nodes to share the load, e.g. via sharding across many machines each holding part of the data.",
+    "chunk_id": [
+      "3cd168b6bbecbb096f6f18ed4b7b207a",
+      "fdf854582c9bb7d04865bb97d2bc96d0"
+    ],
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf",
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "In the SQL vs NoSQL comparison, which storage model uses tables with fixed rows and columns?",
+    "expected_answer": "SQL databases use tables with fixed rows and columns; examples include Oracle, MySQL, Microsoft SQL Server, and PostgreSQL.",
+    "chunk_id": "2f58d6105383ef6619e9833a07e55d37",
+    "category": "bm25",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/DBMS_Full_Notes.pdf"
+    ],
+    "file_names": [
+      "DBMS_Full_Notes.pdf"
+    ]
+  },
+  {
+    "question": "What is Principle 1 in the fundamental techniques for handling people?",
+    "expected_answer": "Don't criticize, condemn or complain.",
+    "chunk_id": [
+      "0292c5063be29cd5a3711a2ccd59e3f1",
+      "c899e783cc89f88a5c1b6fe40962ff1e"
+    ],
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/how-to-win-friends-and-influence-people.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/how-to-win-friends-and-influence-people.pdf"
+    ],
+    "file_names": [
+      "how-to-win-friends-and-influence-people.pdf",
+      "how-to-win-friends-and-influence-people.pdf"
+    ]
+  },
+  {
+    "question": "What does Principle 3 recommend you arouse in other people?",
+    "expected_answer": "An eager want: the person who can arouse in the other person an eager want has the whole world with him.",
+    "chunk_id": "c899e783cc89f88a5c1b6fe40962ff1e",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/how-to-win-friends-and-influence-people.pdf"
+    ],
+    "file_names": [
+      "how-to-win-friends-and-influence-people.pdf"
+    ]
+  },
+  {
+    "question": "What did Jim Farley discover about people's interest in their own names?",
+    "expected_answer": "The average person is more interested in his or her own name than in all the other names on earth put together; remembering and using a name is a subtle, effective compliment.",
+    "chunk_id": "719cb9dd076498f060db3369b184e167",
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/how-to-win-friends-and-influence-people.pdf"
+    ],
+    "file_names": [
+      "how-to-win-friends-and-influence-people.pdf"
+    ]
+  },
+  {
+    "question": "According to the book, what is the only way to get the best of an argument?",
+    "expected_answer": "To avoid it.",
+    "chunk_id": "d9ec5815a53aa3577caa7834cbdda099",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/how-to-win-friends-and-influence-people.pdf"
+    ],
+    "file_names": [
+      "how-to-win-friends-and-influence-people.pdf"
+    ]
+  },
+  {
+    "question": "In Surrounded by Idiots, which behavioural profile is compared to a shot glass of anger that fills and empties quickly?",
+    "expected_answer": "Red.",
+    "chunk_id": [
+      "d5c78b4708a031db8607ddaf82de840f",
+      "63898c7ad766cf4cee40aeeb76b99334"
+    ],
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Surrounded by Idiots - Thomas Erikson.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Surrounded by Idiots - Thomas Erikson.pdf"
+    ],
+    "file_names": [
+      "Surrounded by Idiots - Thomas Erikson.pdf",
+      "Surrounded by Idiots - Thomas Erikson.pdf"
+    ]
+  },
+  {
+    "question": "To what container is the Yellow temperament compared?",
+    "expected_answer": "An everyday drinking glass, which holds more than a shot glass and is easier to see when full.",
+    "chunk_id": "1b9c144ce2791b783d742a6b3e593fa8",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Surrounded by Idiots - Thomas Erikson.pdf"
+    ],
+    "file_names": [
+      "Surrounded by Idiots - Thomas Erikson.pdf"
+    ]
+  },
+  {
+    "question": "Why is 'quick' synonymous with 'good' for Reds?",
+    "expected_answer": "For Reds, time is money; being quick is considered good, and if a Red loses interest in a meeting their thoughts move to the next step.",
+    "chunk_id": "cc1ef3e12113b3e0c0b9f05869ad7cd6",
+    "category": "bm25",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Surrounded by Idiots - Thomas Erikson.pdf"
+    ],
+    "file_names": [
+      "Surrounded by Idiots - Thomas Erikson.pdf"
+    ]
+  },
+  {
+    "question": "What is Law 1 of The 48 Laws of Power and what does it advise regarding those above you?",
+    "expected_answer": "Never outshine the master: always make those above you feel comfortably superior; do not display your talent too far, hide your time and be patient, and outshine your master someday.",
+    "chunk_id": [
+      "f0d276af1f0945eacd43bceb49e53fab",
+      "6890b92519177cb2d84aab85bc2d2bc8"
+    ],
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/The+48+Laws+Of+Power.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/The+48+Laws+Of+Power.pdf"
+    ],
+    "file_names": [
+      "The+48+Laws+Of+Power.pdf",
+      "The+48+Laws+Of+Power.pdf"
+    ]
+  },
+  {
+    "question": "Which law advises you to get others to do the work for you but always take the credit?",
+    "expected_answer": "Get others to do the work for you, but always take the credit: use the wisdom, knowledge, and legwork of other people to further your own cause; never do yourself what others can do for you.",
+    "chunk_id": [
+      "6ed49e310309f8091870e8a9e9be512e",
+      "a4c6b520250bd23c26ceb9847f853d7d"
+    ],
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/The+48+Laws+Of+Power.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/The+48+Laws+Of+Power.pdf"
+    ],
+    "file_names": [
+      "The+48+Laws+Of+Power.pdf",
+      "The+48+Laws+Of+Power.pdf"
+    ]
+  },
+  {
+    "question": "Why does the book say the ability to make others come to you is a more powerful weapon than aggression?",
+    "expected_answer": "In the long run, the ability to make others come to you is a weapon far more powerful than any tool of aggression, because forcing others to act puts you in control; persuasion by words often turns against you.",
+    "chunk_id": "8647ff5f407210c62ecebfb0a6aca7f2",
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/The+48+Laws+Of+Power.pdf"
+    ],
+    "file_names": [
+      "The+48+Laws+Of+Power.pdf"
+    ]
+  },
+  {
+    "question": "According to the American Marketing Association, what is a brand?",
+    "expected_answer": "A name, term, sign, symbol, or design, or a combination of them, intended to identify the goods and services of one seller or group of sellers and to differentiate them from competitors.",
+    "chunk_id": [
+      "957b3cc1f3f8617572471378d9116112",
+      "15b692d858a9bd3edddf59ecf11db5f5"
+    ],
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Strategic_Brand_Management_5E_2020.pdf",
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Strategic_Brand_Management_5E_2020.pdf"
+    ],
+    "file_names": [
+      "Strategic_Brand_Management_5E_2020.pdf",
+      "Strategic_Brand_Management_5E_2020.pdf"
+    ]
+  },
+  {
+    "question": "How is corporate brand equity defined?",
+    "expected_answer": "The differential response by consumers, customers, employees, other firms, or any relevant constituency to the words, actions, communications, products, or services provided by an identified corporate brand entity.",
+    "chunk_id": "8f7b1620cddf518a94caf85b30abf0f0",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Strategic_Brand_Management_5E_2020.pdf"
+    ],
+    "file_names": [
+      "Strategic_Brand_Management_5E_2020.pdf"
+    ]
+  },
+  {
+    "question": "What is dark psychology about according to the book?",
+    "expected_answer": "Dark psychology covers the practical uses and best defenses of psychological warfare in everyday life, including how to detect and defend against manipulation, deception, dark persuasion, and covert NLP.",
+    "chunk_id": "ab6066b7de2cb1fc4bbfc118e6048ef2",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Dark-Psychology -James-Williams.pdf"
+    ],
+    "file_names": [
+      "Dark-Psychology -James-Williams.pdf"
+    ]
+  },
+  {
+    "question": "Which kind of people are more likely to fall for manipulative techniques that involve blackmail?",
+    "expected_answer": "People with lofty ambitions and aspirations, e.g. a young career man with a sterling reputation who is ambitious and will do anything to retain his status quo.",
+    "chunk_id": "6f6fb8d43f114539288933fe2047a465",
+    "category": "semantic",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/Dark-Psychology -James-Williams.pdf"
+    ],
+    "file_names": [
+      "Dark-Psychology -James-Williams.pdf"
+    ]
+  },
+  {
+    "question": "What is the ico Design 'Burst' project about?",
+    "expected_answer": "Burst is an oral care brand with a bold ambition to position itself as a challenger to revolutionize the staid, overpriced oral care industry.",
+    "chunk_id": "591c4fd3d479b80d483132e6bc7e79ad",
+    "category": "direct",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/identity-designed-the-definitive-guide-to-visual-branding-9781631595943-9781631595950_compress.pdf"
+    ],
+    "file_names": [
+      "identity-designed-the-definitive-guide-to-visual-branding-9781631595943-9781631595950_compress.pdf"
+    ]
+  },
+  {
+    "question": "Why does the author stress that trademarking a name or identity is outside the scope of their work?",
+    "expected_answer": "Because due diligence with creative work is done to help avoid infringement, and due to the sheer number of logos in the world it's impossible to create one that's entirely unique; trademarking requires an attorney and is outside the scope of their design work.",
+    "chunk_id": "b7d36d97b3a87b9d2845cd63269e8ba7",
+    "category": "bm25",
+    "source_files": [
+      "/run/media/nilax/New Volume/projects/llm-zoomcamp-project/temp_data/identity-designed-the-definitive-guide-to-visual-branding-9781631595943-9781631595950_compress.pdf"
+    ],
+    "file_names": [
+      "identity-designed-the-definitive-guide-to-visual-branding-9781631595943-9781631595950_compress.pdf"
+    ]
+  }
+]

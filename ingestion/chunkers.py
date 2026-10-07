@@ -44,8 +44,10 @@ class BaseChunker(ABC):
         pass
 
     @staticmethod
-    def _generate_chunk_id(source_file: str, index: int) -> str:
-        raw = f"{source_file}::{index}"
+    def _generate_chunk_id(
+        source_file: str, index: int, page_number: Optional[int] = None
+    ) -> str:
+        raw = f"{source_file}::{page_number}::{index}"
         return hashlib.md5(raw.encode()).hexdigest()
 
     @staticmethod
@@ -122,7 +124,7 @@ class RecursiveCharacterChunker(BaseChunker):
             if text.strip():
                 result_chunks.append(
                     Chunk(
-                        chunk_id=self._generate_chunk_id(doc.source_file, idx),
+                        chunk_id=self._generate_chunk_id(doc.source_file, idx, doc.page_number),
                         doc_id=doc_id,
                         text=text.strip(),
                         chunk_index=idx,
@@ -171,7 +173,9 @@ class MarkdownHeaderChunker(BaseChunker):
             if len(sec) <= self.chunk_size:
                 chunks.append(
                     Chunk(
-                        chunk_id=self._generate_chunk_id(doc.source_file, idx),
+                        chunk_id=self._generate_chunk_id(
+                            doc.source_file, idx, doc.page_number
+                        ),
                         doc_id=doc_id,
                         text=sec,
                         chunk_index=idx,
@@ -194,7 +198,9 @@ class MarkdownHeaderChunker(BaseChunker):
                 )
                 sub_chunks = self.fallback_chunker.chunk_document(sub_doc)
                 for sc in sub_chunks:
-                    sc.chunk_id = self._generate_chunk_id(doc.source_file, idx)
+                    sc.chunk_id = self._generate_chunk_id(
+                        doc.source_file, idx, doc.page_number
+                    )
                     sc.chunk_index = idx
                     chunks.append(sc)
                     idx += 1

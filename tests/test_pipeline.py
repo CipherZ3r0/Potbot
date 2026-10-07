@@ -93,6 +93,40 @@ class TestpotbotPipeline(unittest.TestCase):
         q = "what is the policy?"
         self.assertEqual(rewriter.rewrite(q), q)
 
+    def test_chunk_no_collision_across_pages(self):
+        chunker = RecursiveCharacterChunker(chunk_size=10, chunk_overlap=0)
+        docs = [
+            Document(
+                text="Page one text that is long enough to split.",
+                source_file="/tmp/book.pdf",
+                file_name="book.pdf",
+                file_type=".pdf",
+                page_number=page,
+            )
+            for page in (1, 2)
+        ]
+        ids_1 = [c.chunk_id for c in chunker.chunk_document(docs[0])]
+        ids_2 = [c.chunk_id for c in chunker.chunk_document(docs[1])]
+        self.assertTrue(ids_1 and ids_2)
+        self.assertFalse(set(ids_1) & set(ids_2), "chunks from different pages must not collide")
+
+    def test_chunk_ids_distinct_for_identical_text_on_different_pages(self):
+        chunker = RecursiveCharacterChunker(chunk_size=10, chunk_overlap=0)
+        text = "Same content every page"
+        make = lambda p: chunker.chunk_document(
+            Document(
+                text=text,
+                source_file="/tmp/book.txt",
+                file_name="book.txt",
+                file_type=".txt",
+                page_number=p,
+            )
+        )
+        ids_1 = [c.chunk_id for c in make(1)]
+        ids_2 = [c.chunk_id for c in make(2)]
+        self.assertTrue(ids_1 and ids_2)
+        self.assertFalse(set(ids_1) & set(ids_2))
+
     def test_run_uploaded_files(self):
         from unittest.mock import MagicMock
         from ingestion.pipeline import IngestionPipeline
