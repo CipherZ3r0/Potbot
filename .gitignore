@@ -29,3 +29,6 @@ env/
 
 # Cache / db
 *.db
+
+# Local evaluation corpus
+temp_data/

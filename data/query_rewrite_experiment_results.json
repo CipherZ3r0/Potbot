@@ -1,0 +1,809 @@
+{
+  "results": {
+    "A": {
+      "n_queries": 26,
+      "hit_rate_at_1": 0.7692307692307693,
+      "hit_rate_at_3": 0.8461538461538461,
+      "hit_rate_at_5": 0.8846153846153846,
+      "mrr_at_5": 0.8108974358974359,
+      "mean_retrieval_s": 0.22583367873113064,
+      "mean_rerank_s": 0.6694476716922788,
+      "mean_total_s": 0.8952813504234095
+    },
+    "B": {
+      "n_queries": 26,
+      "hit_rate_at_1": 0.7307692307692307,
+      "hit_rate_at_3": 0.8076923076923077,
+      "hit_rate_at_5": 0.8076923076923077,
+      "mrr_at_5": 0.7628205128205128,
+      "mean_retrieval_s": 0.04469083388497753,
+      "mean_rerank_s": 0.6656841686537798,
+      "mean_total_s": 0.7103750025387574,
+      "rewrite_failures": 0,
+      "rewrites_unchanged": 0
+    },
+    "n_queries_changed_relevant_set": 2
+  },
+  "per_query": [
+    {
+      "index": 0,
+      "question": "What is a transaction in a database according to the DBMS notes?",
+      "rewritten": "database transaction definition DBMS notes",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.3465645370015409,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 4.108487232999323,
+        "rerank_s": 0.7262415490004059
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05800538599942229,
+        "rerank_s": 0.8190307069999108
+      }
+    },
+    {
+      "index": 1,
+      "question": "What does the Isolation property of ACID transactions guarantee?",
+      "rewritten": "ACID transaction Isolation property guarantee",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.2368164129984507,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 0.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 0.5,
+        "retr_s": 0.0954202710017853,
+        "rerank_s": 0.7344116409985872
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 0.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 0.5,
+        "retr_s": 0.07648331100062933,
+        "rerank_s": 0.7252101949998178
+      }
+    },
+    {
+      "index": 2,
+      "question": "What is a weak entity in the ER model?",
+      "rewritten": "weak entity ER model entity-relationship definition",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.22128645699922345,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 0.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 0.3333333333333333,
+        "retr_s": 0.050435309000022244,
+        "rerank_s": 0.8031036850006785
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 0.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 0.3333333333333333,
+        "retr_s": 0.053343739000411006,
+        "rerank_s": 0.8387770859990269
+      }
+    },
+    {
+      "index": 3,
+      "question": "What are the advantages of indexing in a database?",
+      "rewritten": "database indexing advantages benefits performance",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.11604227800125955,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.08691955600079382,
+        "rerank_s": 0.6495945989991014
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05797638600051869,
+        "rerank_s": 0.6835234249992936
+      }
+    },
+    {
+      "index": 4,
+      "question": "How do columnar databases store and read data compared with row-oriented relational databases?",
+      "rewritten": "columnar database storage format vs row-oriented relational database data layout read performance",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.24070386099992902,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.057395547002670355,
+        "rerank_s": 0.6121929619985167
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04632517400023062,
+        "rerank_s": 0.597464720998687
+      }
+    },
+    {
+      "index": 5,
+      "question": "What is database clustering and how is the dataset handled across servers?",
+      "rewritten": "database clustering data distribution replication sharding across servers",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.21923789299762575,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05850261800151202,
+        "rerank_s": 0.5980379859975073
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04646295100246789,
+        "rerank_s": 0.630303179998009
+      }
+    },
+    {
+      "index": 6,
+      "question": "Which mechanism makes a database reach extremely high availability via load balancing and extra machines?",
+      "rewritten": "database high availability load balancing redundant nodes failover",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.20077798400234315,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05031607799901394,
+        "rerank_s": 0.5988264010011335
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05093109800145612,
+        "rerank_s": 0.6844905270008894
+      }
+    },
+    {
+      "index": 7,
+      "question": "What is the simplest type of NoSQL database?",
+      "rewritten": "simplest type of NoSQL database",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.3580712670009234,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04388856900186511,
+        "rerank_s": 0.5883936229984101
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.036772924999240786,
+        "rerank_s": 0.5462137150025228
+      }
+    },
+    {
+      "index": 8,
+      "question": "How can you scale out a database by bringing on additional nodes to share the load?",
+      "rewritten": "database horizontal scaling adding nodes load distribution sharding",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.21733979299824568,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.07844521300285123,
+        "rerank_s": 0.584191968999221
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.08214549200056354,
+        "rerank_s": 0.6401740140026959
+      }
+    },
+    {
+      "index": 9,
+      "question": "In the SQL vs NoSQL comparison, which storage model uses tables with fixed rows and columns?",
+      "rewritten": "SQL relational database storage model tables fixed rows columns",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.15041752499746508,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.06837805900067906,
+        "rerank_s": 0.8390713389999291
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.03895127700161538,
+        "rerank_s": 0.639551254997059
+      }
+    },
+    {
+      "index": 10,
+      "question": "What is Principle 1 in the fundamental techniques for handling people?",
+      "rewritten": "Principle 1 fundamental techniques for handling people",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.15469025000129477,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.07609580600183108,
+        "rerank_s": 0.9114316269988194
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.06480789499983075,
+        "rerank_s": 0.8706648240004142
+      }
+    },
+    {
+      "index": 11,
+      "question": "What does Principle 3 recommend you arouse in other people?",
+      "rewritten": "Principle 3 arouse enthusiasm in others",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.12657620000027237,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.06928060399877722,
+        "rerank_s": 0.7762811319989851
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04685898699972313,
+        "rerank_s": 0.6028165060015453
+      }
+    },
+    {
+      "index": 12,
+      "question": "What did Jim Farley discover about people's interest in their own names?",
+      "rewritten": "Jim Farley people interest in their own names discovery",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.24586170999828028,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.06395237900142092,
+        "rerank_s": 0.6051529219985241
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.036347845001728274,
+        "rerank_s": 0.7101737310003955
+      }
+    },
+    {
+      "index": 13,
+      "question": "According to the book, what is the only way to get the best of an argument?",
+      "rewritten": "book only way to get the best of an argument",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.2227822089989786,
+      "A": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.07485033400007524,
+        "rerank_s": 0.8850384240031417
+      },
+      "B": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.04163575200072955,
+        "rerank_s": 0.86919944300098
+      }
+    },
+    {
+      "index": 14,
+      "question": "In Surrounded by Idiots, which behavioural profile is compared to a shot glass of anger that fills and empties quickly?",
+      "rewritten": "Surrounded by Idiots shot glass of anger fills and empties quickly behavioural profile",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.12710674199843197,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.08540088000154356,
+        "rerank_s": 0.6829117479974229
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.0348646659986116,
+        "rerank_s": 0.6990919909985678
+      }
+    },
+    {
+      "index": 15,
+      "question": "To what container is the Yellow temperament compared?",
+      "rewritten": "Yellow temperament compared to container metaphor",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.5642964030012081,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.06933344899880467,
+        "rerank_s": 0.5922585309999704
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04021393699804321,
+        "rerank_s": 0.6180388030006725
+      }
+    },
+    {
+      "index": 16,
+      "question": "Why is 'quick' synonymous with 'good' for Reds?",
+      "rewritten": "Reds quick good synonym",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 6.115103497999371,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.07849592200000188,
+        "rerank_s": 0.6304254150018096
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.03644529600205715,
+        "rerank_s": 0.5882928999999422
+      }
+    },
+    {
+      "index": 17,
+      "question": "What is Law 1 of The 48 Laws of Power and what does it advise regarding those above you?",
+      "rewritten": "Law 1 The 48 Laws of Power Never Outshine the Master advice regarding those above you",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.4788457100003143,
+      "A": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.07855252899753395,
+        "rerank_s": 0.803822036999918
+      },
+      "B": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.034852917000534944,
+        "rerank_s": 0.6279439959980664
+      }
+    },
+    {
+      "index": 18,
+      "question": "Which law advises you to get others to do the work for you but always take the credit?",
+      "rewritten": "Peter Principle",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.11736111899881507,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.07629873100086115,
+        "rerank_s": 0.7336813090005307
+      },
+      "B": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.03654372900200542,
+        "rerank_s": 1.0655485429997498
+      }
+    },
+    {
+      "index": 19,
+      "question": "Why does the book say the ability to make others come to you is a more powerful weapon than aggression?",
+      "rewritten": "book quote \"ability to make others come to you\" more powerful weapon than aggression",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.21167380299812066,
+      "A": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.0632071209984133,
+        "rerank_s": 0.734320668001601
+      },
+      "B": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.03463360199748422,
+        "rerank_s": 0.6590906040000846
+      }
+    },
+    {
+      "index": 20,
+      "question": "According to the American Marketing Association, what is a brand?",
+      "rewritten": "American Marketing Association definition of a brand",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.14648775500245392,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.0672329160006484,
+        "rerank_s": 0.5976539510011207
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.05214203000286943,
+        "rerank_s": 0.4747224610000558
+      }
+    },
+    {
+      "index": 21,
+      "question": "How is corporate brand equity defined?",
+      "rewritten": "Definition of corporate brand equity",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.11246482700153138,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.037962989998050034,
+        "rerank_s": 0.498772237002413
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.02453253700150526,
+        "rerank_s": 0.48503479799910565
+      }
+    },
+    {
+      "index": 22,
+      "question": "What is dark psychology about according to the book?",
+      "rewritten": "dark psychology book summary concepts manipulation persuasion",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.12690034699699027,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 1.0
+        },
+        "mrr5": 0.25,
+        "retr_s": 0.0651154930019402,
+        "rerank_s": 0.41957576499771676
+      },
+      "B": {
+        "ok5": false,
+        "hits": {
+          "1": 0.0,
+          "3": 0.0,
+          "5": 0.0
+        },
+        "mrr5": 0.0,
+        "retr_s": 0.0332039220011211,
+        "rerank_s": 0.5228375020014937
+      }
+    },
+    {
+      "index": 23,
+      "question": "Which kind of people are more likely to fall for manipulative techniques that involve blackmail?",
+      "rewritten": "vulnerability to blackmail manipulation psychological profile susceptible individuals",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.11417143099970417,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.1021751789994596,
+        "rerank_s": 0.5683256080010324
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.03255098099907627,
+        "rerank_s": 0.5657450869985041
+      }
+    },
+    {
+      "index": 24,
+      "question": "What is the ico Design 'Burst' project about?",
+      "rewritten": "ICO Design Burst project overview",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 0.11124681499859435,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.04912183600026765,
+        "rerank_s": 0.5692629130026035
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.032954394999251235,
+        "rerank_s": 0.6262874130006821
+      }
+    },
+    {
+      "index": 25,
+      "question": "Why does the author stress that trademarking a name or identity is outside the scope of their work?",
+      "rewritten": "trademarking name identity outside scope author",
+      "rewrite_failed": false,
+      "rewrite_unchanged": false,
+      "rewrite_s": 1.1204413489977014,
+      "A": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.11641102499925182,
+        "rerank_s": 0.6626594230001501
+      },
+      "B": {
+        "ok5": true,
+        "hits": {
+          "1": 1.0,
+          "3": 1.0,
+          "5": 1.0
+        },
+        "mrr5": 1.0,
+        "retr_s": 0.03197545099828858,
+        "rerank_s": 0.5175609580001037
+      }
+    }
+  ]
+}
