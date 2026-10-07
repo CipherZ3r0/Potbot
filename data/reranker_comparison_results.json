@@ -1,0 +1,71 @@
+{
+  "experiment": "reranker_comparison_experiment",
+  "description": "Fixed retrieval (hybrid RRF 0.5/0.5 k=60, pool RETRIEVAL_CANDIDATE_POOL, query rewriting off) with only the cross-encoder reranker swapped; same 26 GT queries, potbot_eval index. Candidate sets cached once per query.",
+  "retrieval": {
+    "candidate_pool": 20,
+    "vector_rrf_weight": 0.5,
+    "text_rrf_weight": 0.5,
+    "rrf_k": 60,
+    "top_n": 5
+  },
+  "baseline_model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+  "n_queries": 26,
+  "reranker_results": [
+    {
+      "model": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+      "hit_rate_at_1": 0.8461538461538461,
+      "hit_rate_at_3": 0.9230769230769231,
+      "hit_rate_at_5": 0.9615384615384616,
+      "mrr_at_5": 0.8878205128205128,
+      "n_errors": 0,
+      "errors": [],
+      "avg_rerank_ms": 580.530031076845,
+      "tracked_queries": {
+        "13": true,
+        "17": false,
+        "19": true
+      },
+      "q17_best_relevant": null,
+      "recovered_vs_baseline": [],
+      "regressed_vs_baseline": []
+    },
+    {
+      "model": "cross-encoder/ms-marco-TinyBERT-L-6",
+      "hit_rate_at_1": 0.7692307692307693,
+      "hit_rate_at_3": 0.9615384615384616,
+      "hit_rate_at_5": 0.9615384615384616,
+      "mrr_at_5": 0.8525641025641024,
+      "n_errors": 0,
+      "errors": [],
+      "avg_rerank_ms": 1876.9287763847947,
+      "tracked_queries": {
+        "13": true,
+        "17": false,
+        "19": true
+      },
+      "q17_best_relevant": null,
+      "recovered_vs_baseline": [],
+      "regressed_vs_baseline": []
+    },
+    {
+      "model": "BAAI/bge-reranker-v2-m3",
+      "hit_rate_at_1": 0.8076923076923077,
+      "hit_rate_at_3": 0.8846153846153846,
+      "hit_rate_at_5": 0.9230769230769231,
+      "mrr_at_5": 0.8493589743589743,
+      "n_errors": 0,
+      "errors": [],
+      "avg_rerank_ms": 16814.08874180782,
+      "tracked_queries": {
+        "13": true,
+        "17": false,
+        "19": true
+      },
+      "q17_best_relevant": null,
+      "recovered_vs_baseline": [],
+      "regressed_vs_baseline": [
+        22
+      ]
+    }
+  ]
+}

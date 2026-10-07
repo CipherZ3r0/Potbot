@@ -41,12 +41,12 @@ class RAGPipeline:
         user_query: str,
         retrieval_method: str = "hybrid",
         use_reranking: bool = True,
-        use_query_rewriting: bool = True,
+        use_query_rewriting: bool = config.USE_QUERY_REWRITING,
         prompt_style: str = "detailed",
         llm_provider_name: str = None,
         llm_model: str = None,
-        top_k: int = 5,
-        rerank_top_n: int = 3,
+        top_k: int = config.TOP_K_RETRIEVAL,
+        rerank_top_n: int = config.RERANK_TOP_N,
         save_to_db: bool = True,
     ) -> RAGResponse:
         """Execute complete RAG flow for a user query."""
@@ -69,7 +69,7 @@ class RAGPipeline:
         search_q = rewriter.rewrite(user_query)
 
         # 3. Retrieval
-        fetch_k = top_k * 2 if use_reranking else top_k
+        fetch_k = config.RETRIEVAL_CANDIDATE_POOL if use_reranking else top_k
         raw_results = strategy.search(search_q, top_k=fetch_k)
 
         # 4. Re-ranking (optional)

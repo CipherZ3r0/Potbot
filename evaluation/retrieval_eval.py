@@ -128,8 +128,11 @@ def evaluate_retrieval(
       4. hybrid_rerank — RRF + cross-encoder re-ranking
 
     Retrieval depth is controlled by ``top_k`` (kept at its existing default
-    of 5). Evaluation failures are recorded per query under ``errors`` and
-    reported separately — they never masquerade as genuine 0.0 metrics.
+    of 5). For ``hybrid_rerank`` the hybrid candidate pool fetched before
+    re-ranking comes from ``config.RETRIEVAL_CANDIDATE_POOL`` (default 20),
+    independent of the final ``top_k``. Evaluation failures are recorded per
+    query under ``errors`` and reported separately — they never masquerade as
+    genuine 0.0 metrics.
 
     Returns a summary dict with per-method metrics plus evaluation errors.
     """
@@ -168,7 +171,9 @@ def evaluate_retrieval(
             try:
                 if method == "hybrid_rerank":
                     hybrid_strategy = SearchStrategyFactory.get_strategy("hybrid")
-                    hybrid_results = hybrid_strategy.search(question, top_k=top_k * 2)
+                    hybrid_results = hybrid_strategy.search(
+                        question, top_k=config.RETRIEVAL_CANDIDATE_POOL
+                    )
                     reranker = CrossEncoderReranker()
                     results = reranker.rerank(question, hybrid_results, top_n=top_k)
                 else:

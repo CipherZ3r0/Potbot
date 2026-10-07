@@ -57,6 +57,20 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "200"))
 # --- Retrieval ---
 TOP_K_RETRIEVAL = int(os.getenv("TOP_K_RETRIEVAL", "5"))
 RERANK_TOP_N = int(os.getenv("RERANK_TOP_N", "3"))
+# Number of hybrid candidates fetched before re-ranking. Keep separate from
+# TOP_K_RETRIEVAL (final chunks sent to the LLM) and RERANK_TOP_N (reranker
+# top-N). 20 is the measured practical default; larger pools cost latency.
+RETRIEVAL_CANDIDATE_POOL = int(os.getenv("RETRIEVAL_CANDIDATE_POOL", "20"))
+# RRF fusion weights for hybrid retrieval (vector + BM25). Must sum to 1.0;
+# 0.5/0.5 measured best (recovers BM25-strong queries with no regressions).
+VECTOR_RRF_WEIGHT = float(os.getenv("VECTOR_RRF_WEIGHT", "0.5"))
+TEXT_RRF_WEIGHT = float(os.getenv("TEXT_RRF_WEIGHT", "0.5"))
+# RRF smoothing constant applied to every rank (kept at the measured default).
+RRF_K = int(os.getenv("RRF_K", "60"))
+
+# LLM query rewriting. Off by default (measured net-negative for retrieval);
+# explicit opt-in per-query is still available via use_query_rewriting=True.
+USE_QUERY_REWRITING = os.getenv("USE_QUERY_REWRITING", "false").lower() == "true"
 
 # --- Ingestion Pipeline Parallelism ---
 # ThreadPoolExecutor workers for I/O-bound file loading

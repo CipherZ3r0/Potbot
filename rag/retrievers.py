@@ -4,7 +4,7 @@ Search Strategies — Strategy pattern for vector, text (BM25), and hybrid searc
 
 from abc import ABC, abstractmethod
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 import config
 from domain.models import SearchResult
@@ -52,15 +52,15 @@ class HybridSearchStrategy(BaseSearchStrategy):
         self,
         embedder: BaseEmbedder = None,
         vector_store: BaseVectorStore = None,
-        vector_weight: float = 0.7,
-        text_weight: float = 0.3,
-        rrf_k: int = 60,
+        vector_weight: Optional[float] = None,
+        text_weight: Optional[float] = None,
+        rrf_k: Optional[int] = None,
     ):
         self.vector_strategy = VectorSearchStrategy(embedder, vector_store)
         self.text_strategy = TextSearchStrategy(vector_store)
-        self.vector_weight = vector_weight
-        self.text_weight = text_weight
-        self.rrf_k = rrf_k
+        self.vector_weight = config.VECTOR_RRF_WEIGHT if vector_weight is None else vector_weight
+        self.text_weight = config.TEXT_RRF_WEIGHT if text_weight is None else text_weight
+        self.rrf_k = config.RRF_K if rrf_k is None else rrf_k
 
     def search(self, query: str, top_k: int) -> List[SearchResult]:
         fetch_k = top_k * 3
